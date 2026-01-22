@@ -1,18 +1,22 @@
 """
-Alpha-One Credit Cockpit - Streamlit Dashboard
+Alpha-One Credit Cockpit - Institutional Grade Dashboard
+信用驾驶舱 - 机构级仪表板
 
 A Fixed Income Portfolio Analysis Application for Portfolio Managers.
+专为投资组合经理设计的固定收益组合分析应用。
 
 Features:
+- Mobile-first responsive design
+- Dark mode institutional UI (Bloomberg/Aladdin style)
+- Bilingual interface (English/Chinese)
 - Rich/Cheap bond identification via stratified regression
 - Net Carry efficiency analysis
-- Valuation lag risk monitoring
-- Executive summary generation
 """
 
 import io
 import sys
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -27,91 +31,647 @@ from src.module_b.data_loader import DataLoader, DataValidationError
 from src.module_b.analytics import PortfolioAnalyzer
 from src.utils.constants import SECTOR_COLORS, Z_SCORE_THRESHOLDS
 
-# Page configuration
+# ============================================
+# PAGE CONFIG & THEME
+# ============================================
 st.set_page_config(
-    page_title="Alpha-One Credit Cockpit",
+    page_title="Alpha-One Credit Cockpit | 信用驾驶舱",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",  # Collapsed for mobile-first
+    menu_items={
+        "Get Help": None,
+        "Report a bug": None,
+        "About": "Alpha-One Credit Cockpit v2.0 | 机构级固收组合分析系统"
+    }
 )
 
-# Custom CSS for professional styling
-st.markdown("""
+# ============================================
+# INSTITUTIONAL DARK THEME CSS
+# ============================================
+DARK_THEME_CSS = """
 <style>
+    /* ====== IMPORTS ====== */
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+    /* ====== ROOT VARIABLES ====== */
+    :root {
+        --bg-primary: #0d1117;
+        --bg-secondary: #161b22;
+        --bg-tertiary: #21262d;
+        --bg-card: rgba(33, 38, 45, 0.85);
+        --border-color: #30363d;
+        --border-accent: #58a6ff;
+        --text-primary: #e6edf3;
+        --text-secondary: #8b949e;
+        --text-muted: #6e7681;
+        --accent-blue: #58a6ff;
+        --accent-green: #3fb950;
+        --accent-red: #f85149;
+        --accent-yellow: #d29922;
+        --accent-purple: #a371f7;
+        --font-mono: 'Roboto Mono', 'Consolas', 'Monaco', monospace;
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* ====== GLOBAL STYLES ====== */
+    .stApp {
+        background: linear-gradient(180deg, var(--bg-primary) 0%, #0a0e14 100%);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+    }
+
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display: none;}
+
+    /* ====== HEADER STYLES ====== */
     .main-header {
-        font-size: 2.5rem;
+        font-size: clamp(1.5rem, 5vw, 2.5rem);
         font-weight: 700;
-        color: #1f2937;
+        background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
+    }
+
+    .sub-header {
+        font-size: clamp(0.75rem, 2.5vw, 1rem);
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        font-weight: 400;
+    }
+
+    .section-header {
+        font-size: clamp(1rem, 3vw, 1.25rem);
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* ====== METRIC CARDS ====== */
+    .metric-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .metric-card:hover {
+        border-color: var(--border-accent);
+        box-shadow: 0 4px 20px rgba(88, 166, 255, 0.1);
+    }
+
+    .metric-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+    }
+
+    .metric-value {
+        font-family: var(--font-mono);
+        font-size: clamp(1.25rem, 4vw, 1.75rem);
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1.2;
+    }
+
+    .metric-delta {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .metric-delta.positive { color: var(--accent-green); }
+    .metric-delta.negative { color: var(--accent-red); }
+    .metric-delta.neutral { color: var(--text-muted); }
+
+    /* Card variants */
+    .metric-card.accent-blue { border-left: 3px solid var(--accent-blue); }
+    .metric-card.accent-green { border-left: 3px solid var(--accent-green); }
+    .metric-card.accent-red { border-left: 3px solid var(--accent-red); }
+    .metric-card.accent-yellow { border-left: 3px solid var(--accent-yellow); }
+
+    /* ====== BOND CARD (Mobile View) ====== */
+    .bond-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.875rem;
         margin-bottom: 0.5rem;
     }
-    .sub-header {
-        font-size: 1rem;
-        color: #6b7280;
-        margin-bottom: 2rem;
+
+    .bond-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
     }
-    .metric-card {
-        background-color: #f9fafb;
-        border-radius: 0.5rem;
-        padding: 1rem;
-        border-left: 4px solid #3b82f6;
+
+    .bond-ticker {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--accent-blue);
     }
-    .warning-card {
-        border-left-color: #f59e0b;
+
+    .bond-zscore {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        padding: 0.125rem 0.5rem;
+        border-radius: 4px;
     }
-    .danger-card {
-        border-left-color: #ef4444;
+
+    .bond-zscore.rich {
+        background: rgba(248, 81, 73, 0.2);
+        color: var(--accent-red);
     }
-    .stDataFrame {
+
+    .bond-zscore.cheap {
+        background: rgba(63, 185, 80, 0.2);
+        color: var(--accent-green);
+    }
+
+    .bond-zscore.fair {
+        background: rgba(139, 148, 158, 0.2);
+        color: var(--text-secondary);
+    }
+
+    .bond-name {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .bond-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .bond-metric {
+        text-align: center;
+    }
+
+    .bond-metric-label {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .bond-metric-value {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--text-primary);
+    }
+
+    /* ====== STREAMLIT OVERRIDES ====== */
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        padding: 4px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        padding: 0.5rem 1rem;
         font-size: 0.875rem;
     }
+
+    .stTabs [aria-selected="true"] {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    /* Expander */
+    .streamlit-expanderHeader {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .streamlit-expanderContent {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.5rem 1.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+    }
+
+    /* Checkbox */
+    .stCheckbox label {
+        color: var(--text-primary);
+    }
+
+    /* Selectbox & Multiselect */
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div {
+        background: var(--bg-tertiary);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    /* Slider */
+    .stSlider > div > div > div {
+        background: var(--accent-blue);
+    }
+
+    /* Dataframe */
+    .stDataFrame {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .stDataFrame [data-testid="stDataFrameResizable"] {
+        background: var(--bg-secondary);
+    }
+
+    /* File uploader */
+    .stFileUploader > div {
+        background: var(--bg-tertiary);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+    }
+
+    /* Divider */
+    hr {
+        border-color: var(--border-color);
+        margin: 1.5rem 0;
+    }
+
+    /* ====== MOBILE RESPONSIVE ====== */
+    @media (max-width: 768px) {
+        .main-header {
+            text-align: center;
+        }
+
+        .sub-header {
+            text-align: center;
+        }
+
+        .metric-card {
+            padding: 0.75rem;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.75rem;
+        }
+
+        /* Stack columns vertically */
+        [data-testid="column"] {
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+    }
+
+    /* ====== PLOTLY DARK THEME ====== */
+    .js-plotly-plot .plotly .modebar {
+        background: var(--bg-secondary) !important;
+    }
+
+    .js-plotly-plot .plotly .modebar-btn path {
+        fill: var(--text-secondary) !important;
+    }
+
+    /* ====== SCROLLBAR ====== */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+    }
+
+    /* ====== STATUS INDICATORS ====== */
+    .status-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .status-badge.rich {
+        background: rgba(248, 81, 73, 0.15);
+        color: var(--accent-red);
+        border: 1px solid rgba(248, 81, 73, 0.3);
+    }
+
+    .status-badge.cheap {
+        background: rgba(63, 185, 80, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+
+    .status-badge.bleeding {
+        background: rgba(210, 153, 34, 0.15);
+        color: var(--accent-yellow);
+        border: 1px solid rgba(210, 153, 34, 0.3);
+    }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+# ============================================
+# BILINGUAL LABELS
+# ============================================
+LABELS = {
+    # Headers
+    "app_title": "Alpha-One Credit Cockpit",
+    "app_subtitle": "Fixed Income Portfolio Optimizer | 固定收益组合优化器",
+
+    # Tabs
+    "tab_matrix": "Relative Value / 相对价值",
+    "tab_optimization": "Alpha Lab / 阿尔法实验室",
+    "tab_brief": "Executive Brief / 管理简报",
+
+    # Sections
+    "portfolio_overview": "Portfolio Overview / 组合概览",
+    "filter_settings": "Filter Settings / 筛选条件",
+    "data_source": "Data Source / 数据源",
+    "duration_yield_matrix": "Duration-Yield Matrix / 久期-收益率矩阵",
+    "sell_candidates": "Sell Candidates / 卖出候选",
+    "bleeding_assets": "Bleeding Assets / 失血资产",
+    "carry_distribution": "Carry Distribution / 息差分布",
+    "sector_allocation": "Sector Allocation / 板块配置",
+    "data_export": "Data Export / 数据导出",
+
+    # Metrics
+    "total_aum": "Total AUM / 总资产",
+    "holdings": "Holdings / 持仓数",
+    "duration": "Duration / 久期",
+    "ytm": "YTM / 到期收益率",
+    "oas": "OAS / 期权调整利差",
+    "notional": "Notional / 名义本金",
+    "net_carry": "Net Carry / 净息差",
+    "carry_eff": "Carry Eff. / 息差效率",
+    "z_score": "Z-Score / Z分数",
+    "ftp": "FTP / 资金成本",
+    "sector": "Sector / 板块",
+    "accounting": "Accounting / 会计分类",
+    "tradeable": "Tradeable / 可交易",
+    "htim_locked": "HTM Locked / HTM锁定",
+    "negative_carry": "Neg. Carry / 负息差",
+    "wtd_duration": "Wtd Duration / 加权久期",
+    "wtd_yield": "Wtd Yield / 加权收益",
+    "wtd_carry": "Wtd Carry / 加权息差",
+
+    # Actions
+    "upload_csv": "Upload Portfolio CSV / 上传组合CSV",
+    "use_sample": "Use Sample Data / 使用示例数据",
+    "exclude_htm": "Exclude HTM / 排除持有至到期",
+    "min_liquidity": "Min Liquidity / 最低流动性",
+    "generate_summary": "Generate Summary / 生成摘要",
+    "download_csv": "Download CSV / 下载CSV",
+    "download_summary": "Download Summary / 下载摘要",
+
+    # Mobile
+    "mobile_view": "Mobile View / 移动视图",
+    "show_more": "Show More / 显示更多",
+
+    # Status
+    "data_loaded": "Data Loaded / 数据已加载",
+    "no_data": "No data available / 暂无数据",
+    "loading": "Loading... / 加载中...",
+}
+
+# Sector name translations
+SECTOR_NAMES_CN = {
+    "MBS": "抵押贷款证券",
+    "Corps": "公司债",
+    "Fins": "金融债",
+    "Rates": "利率债",
+    "EM": "新兴市场",
+    "ABS": "资产支持证券",
+    "CMBS": "商业抵押证券",
+    "CLO": "贷款抵押证券",
+    "Munis": "市政债",
+    "Sovs": "主权债",
+}
+
+# ============================================
+# PLOTLY DARK THEME TEMPLATE
+# ============================================
+PLOTLY_DARK_TEMPLATE = {
+    "layout": {
+        "paper_bgcolor": "rgba(13, 17, 23, 0)",
+        "plot_bgcolor": "rgba(22, 27, 34, 0.5)",
+        "font": {"color": "#e6edf3", "family": "Inter, sans-serif"},
+        "title": {"font": {"color": "#e6edf3"}},
+        "xaxis": {
+            "gridcolor": "rgba(48, 54, 61, 0.5)",
+            "linecolor": "#30363d",
+            "tickfont": {"color": "#8b949e"},
+            "title": {"font": {"color": "#8b949e"}},
+        },
+        "yaxis": {
+            "gridcolor": "rgba(48, 54, 61, 0.5)",
+            "linecolor": "#30363d",
+            "tickfont": {"color": "#8b949e"},
+            "title": {"font": {"color": "#8b949e"}},
+        },
+        "legend": {
+            "bgcolor": "rgba(22, 27, 34, 0.8)",
+            "bordercolor": "#30363d",
+            "font": {"color": "#e6edf3"},
+        },
+        "hoverlabel": {
+            "bgcolor": "#21262d",
+            "bordercolor": "#30363d",
+            "font": {"color": "#e6edf3", "family": "Roboto Mono, monospace"},
+        },
+    }
+}
+
+# Updated sector colors for dark theme
+DARK_SECTOR_COLORS = {
+    "MBS": "#58a6ff",
+    "Corps": "#a371f7",
+    "Fins": "#3fb950",
+    "Rates": "#f0883e",
+    "EM": "#f85149",
+    "ABS": "#db61a2",
+    "CMBS": "#79c0ff",
+    "CLO": "#56d4dd",
+    "Munis": "#d29922",
+    "Sovs": "#8b949e",
+    "Other": "#6e7681",
+}
 
 
-def format_currency(value: float) -> str:
-    """Format value as currency."""
-    if value >= 1e9:
-        return f"${value/1e9:.2f}B"
-    elif value >= 1e6:
-        return f"${value/1e6:.2f}M"
-    elif value >= 1e3:
-        return f"${value/1e3:.1f}K"
-    else:
-        return f"${value:,.0f}"
+# ============================================
+# UTILITY FUNCTIONS
+# ============================================
+def format_currency(value: float, short: bool = True) -> str:
+    """Format value as currency with proper alignment."""
+    if pd.isna(value):
+        return "—"
+    if short:
+        if abs(value) >= 1e9:
+            return f"${value/1e9:.2f}B"
+        elif abs(value) >= 1e6:
+            return f"${value/1e6:.1f}M"
+        elif abs(value) >= 1e3:
+            return f"${value/1e3:.0f}K"
+    return f"${value:,.0f}"
 
 
-def format_percentage(value: float) -> str:
+def format_percentage(value: float, decimals: int = 2) -> str:
     """Format value as percentage."""
-    return f"{value * 100:.2f}%"
+    if pd.isna(value):
+        return "—"
+    return f"{value * 100:.{decimals}f}%"
 
 
-def apply_z_score_color(val):
-    """Apply color styling based on Z-score."""
-    if pd.isna(val):
-        return ""
-    if val < Z_SCORE_THRESHOLDS["rich"]:
-        return "background-color: #fee2e2; color: #991b1b;"  # Red - Rich
-    elif val > Z_SCORE_THRESHOLDS["cheap"]:
-        return "background-color: #dcfce7; color: #166534;"  # Green - Cheap
-    return ""
+def format_number(value: float, decimals: int = 2) -> str:
+    """Format number with proper decimals."""
+    if pd.isna(value):
+        return "—"
+    return f"{value:.{decimals}f}"
 
 
-def apply_carry_color(val):
-    """Apply color styling based on Net Carry."""
-    if pd.isna(val):
-        return ""
-    if val < 0:
-        return "background-color: #fee2e2; color: #991b1b;"  # Red - Bleeding
-    elif val > 0.01:  # > 1%
-        return "background-color: #dcfce7; color: #166534;"  # Green - Good carry
-    return ""
+def get_z_score_class(z_score: float) -> str:
+    """Get CSS class based on Z-score."""
+    if pd.isna(z_score):
+        return "fair"
+    if z_score < -1.5:
+        return "rich"
+    elif z_score > 1.5:
+        return "cheap"
+    return "fair"
 
 
+def get_z_score_label(z_score: float) -> str:
+    """Get label based on Z-score."""
+    if pd.isna(z_score):
+        return "Fair"
+    if z_score < -1.5:
+        return "Rich / 贵"
+    elif z_score > 1.5:
+        return "Cheap / 便宜"
+    return "Fair / 公允"
+
+
+def render_metric_card(
+    label: str,
+    value: str,
+    delta: Optional[str] = None,
+    delta_type: str = "neutral",
+    accent: str = "blue"
+) -> str:
+    """Render a styled metric card."""
+    delta_html = ""
+    if delta:
+        delta_html = f'<div class="metric-delta {delta_type}">{delta}</div>'
+
+    return f"""
+    <div class="metric-card accent-{accent}">
+        <div class="metric-label">{label}</div>
+        <div class="metric-value">{value}</div>
+        {delta_html}
+    </div>
+    """
+
+
+def render_bond_card(row: pd.Series) -> str:
+    """Render a mobile-friendly bond card."""
+    z_class = get_z_score_class(row.get("Z_Score", 0))
+    z_label = f"{row.get('Z_Score', 0):.2f}" if not pd.isna(row.get("Z_Score")) else "—"
+
+    name = row.get("Name", "N/A")
+    if len(name) > 35:
+        name = name[:32] + "..."
+
+    return f"""
+    <div class="bond-card">
+        <div class="bond-card-header">
+            <span class="bond-ticker">{row.get('Ticker', 'N/A')}</span>
+            <span class="bond-zscore {z_class}">Z: {z_label}</span>
+        </div>
+        <div class="bond-name">{name}</div>
+        <div class="bond-metrics">
+            <div class="bond-metric">
+                <div class="bond-metric-label">YTM</div>
+                <div class="bond-metric-value">{format_percentage(row.get('Yield', 0))}</div>
+            </div>
+            <div class="bond-metric">
+                <div class="bond-metric-label">DUR</div>
+                <div class="bond-metric-value">{format_number(row.get('Duration', 0), 1)}y</div>
+            </div>
+            <div class="bond-metric">
+                <div class="bond-metric-label">OAS</div>
+                <div class="bond-metric-value">{format_number(row.get('OAS', 0), 0)}bp</div>
+            </div>
+        </div>
+    </div>
+    """
+
+
+# ============================================
+# MAIN APPLICATION
+# ============================================
 def main():
-    """Main application."""
+    """Main application entry point."""
+    # Inject dark theme CSS
+    st.markdown(DARK_THEME_CSS, unsafe_allow_html=True)
+
     # Header
-    st.markdown('<p class="main-header">📊 Alpha-One Credit Cockpit</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Fixed Income Portfolio Optimization | Module B: Quantitative Scanner</p>', unsafe_allow_html=True)
+    st.markdown(f'<h1 class="main-header">{LABELS["app_title"]}</h1>', unsafe_allow_html=True)
+    st.markdown(f'<p class="sub-header">{LABELS["app_subtitle"]}</p>', unsafe_allow_html=True)
 
     # Initialize session state
     if "data_loaded" not in st.session_state:
@@ -120,99 +680,102 @@ def main():
         st.session_state.df = None
     if "analyzer" not in st.session_state:
         st.session_state.analyzer = None
+    if "mobile_view" not in st.session_state:
+        st.session_state.mobile_view = False
 
     # ============================================
-    # SIDEBAR
+    # FILTERS (Main Page Expander for Mobile)
     # ============================================
-    with st.sidebar:
-        st.header("⚙️ Configuration")
+    with st.expander(f"⚙️ {LABELS['filter_settings']}", expanded=False):
+        filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 1])
 
-        # Data Upload
-        st.subheader("📁 Data Source")
-        uploaded_file = st.file_uploader(
-            "Upload Portfolio CSV",
-            type=["csv"],
-            help="Upload your portfolio export file (supports bilingual columns)",
-        )
+        with filter_col1:
+            # Data Upload
+            st.markdown(f"**{LABELS['data_source']}**")
+            uploaded_file = st.file_uploader(
+                LABELS["upload_csv"],
+                type=["csv"],
+                help="Upload your portfolio export file (supports bilingual columns)",
+                label_visibility="collapsed",
+            )
+            use_sample = st.checkbox(LABELS["use_sample"], value=not uploaded_file)
 
-        use_sample = st.checkbox("Use Sample Data", value=not uploaded_file)
+        with filter_col2:
+            st.markdown("**Filters / 筛选器**")
+            exclude_htm = st.checkbox(
+                LABELS["exclude_htm"],
+                value=True,
+                help="HTM bonds cannot be sold due to regulations / HTM债券因法规限制不能出售",
+            )
 
-        if uploaded_file or use_sample:
-            try:
-                loader = DataLoader()
+            if st.session_state.data_loaded and st.session_state.df is not None:
+                available_sectors = sorted(st.session_state.df["Sector_L1"].unique())
+                selected_sectors = st.multiselect(
+                    f"{LABELS['sector']}",
+                    options=available_sectors,
+                    default=available_sectors,
+                )
+            else:
+                selected_sectors = []
 
-                if uploaded_file:
-                    df = loader.load_from_upload(uploaded_file)
+        with filter_col3:
+            st.markdown("**View / 视图**")
+            st.session_state.mobile_view = st.checkbox(
+                LABELS["mobile_view"],
+                value=st.session_state.mobile_view,
+                help="Optimized for mobile screens / 针对移动屏幕优化"
+            )
+
+            if st.session_state.data_loaded:
+                min_liquidity = st.slider(
+                    LABELS["min_liquidity"],
+                    min_value=1,
+                    max_value=5,
+                    value=1,
+                )
+            else:
+                min_liquidity = 1
+
+    # ============================================
+    # DATA LOADING
+    # ============================================
+    if uploaded_file or use_sample:
+        try:
+            loader = DataLoader()
+
+            if uploaded_file:
+                df = loader.load_from_upload(uploaded_file)
+            else:
+                sample_path = Path(__file__).parent / "data" / "portfolio.csv"
+                if sample_path.exists():
+                    df = loader.load(sample_path)
                 else:
-                    # Load sample data
-                    sample_path = Path(__file__).parent / "data" / "portfolio.csv"
-                    if sample_path.exists():
-                        df = loader.load(sample_path)
-                    else:
-                        st.error("Sample data not found. Please upload a CSV file.")
-                        return
+                    st.error("Sample data not found. Please upload a CSV file.")
+                    st.error("示例数据未找到，请上传CSV文件。")
+                    return
 
-                # Fit curves
-                analyzer = PortfolioAnalyzer(df)
-                analyzer.fit_sector_curves()
+            # Fit curves
+            analyzer = PortfolioAnalyzer(df)
+            analyzer.fit_sector_curves()
 
-                st.session_state.df = df
-                st.session_state.analyzer = analyzer
-                st.session_state.data_loaded = True
-                st.session_state.quality_report = loader.get_quality_report()
+            st.session_state.df = df
+            st.session_state.analyzer = analyzer
+            st.session_state.data_loaded = True
+            st.session_state.quality_report = loader.get_quality_report()
 
-                st.success(f"✅ Loaded {len(df):,} bonds")
-
-            except DataValidationError as e:
-                st.error(f"Data validation error: {e}")
-                return
-            except Exception as e:
-                st.error(f"Error loading data: {e}")
-                return
-
-        if not st.session_state.data_loaded:
-            st.info("👆 Upload a CSV file or use sample data to begin")
+        except DataValidationError as e:
+            st.error(f"Data validation error: {e}")
+            return
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
             return
 
-        st.divider()
+    if not st.session_state.data_loaded:
+        st.info("☝️ Expand 'Filter Settings' above to upload data or use sample data")
+        st.info("☝️ 展开上方'筛选条件'上传数据或使用示例数据")
+        return
 
-        # Global Filters
-        st.subheader("🔍 Filters")
-
-        exclude_htm = st.checkbox(
-            "Exclude HTM Assets",
-            value=True,
-            help="HTM (Hold-to-Maturity) bonds cannot be sold due to regulations",
-        )
-
-        available_sectors = sorted(st.session_state.df["Sector_L1"].unique())
-        selected_sectors = st.multiselect(
-            "Sectors",
-            options=available_sectors,
-            default=available_sectors,
-            help="Select sectors to include in analysis",
-        )
-
-        min_liquidity = st.slider(
-            "Min Liquidity Score",
-            min_value=1,
-            max_value=5,
-            value=1,
-            help="Filter by liquidity proxy (5 = High, 3 = Low)",
-        )
-
-        st.divider()
-
-        # Data Quality Report
-        if st.session_state.quality_report:
-            with st.expander("📋 Data Quality Report"):
-                report = st.session_state.quality_report.to_dict()
-                for key, value in report.items():
-                    st.metric(key, value)
-
-    # ============================================
-    # MAIN CONTENT - TABS
-    # ============================================
+    # Get filtered data
     analyzer = st.session_state.analyzer
     df_filtered = analyzer.get_filtered_data(
         exclude_htm=exclude_htm,
@@ -220,62 +783,113 @@ def main():
         min_liquidity=min_liquidity,
     )
 
-    # Re-fit curves on filtered data if significantly different
+    # Re-fit curves on filtered data
     filtered_analyzer = PortfolioAnalyzer(df_filtered)
     filtered_analyzer.fit_sector_curves()
 
+    # ============================================
+    # KPI METRICS ROW
+    # ============================================
+    st.markdown(f'<div class="section-header">{LABELS["portfolio_overview"]}</div>', unsafe_allow_html=True)
+
+    metrics = filtered_analyzer.calculate_portfolio_metrics()
+
+    # Use 4 columns that will stack on mobile
+    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+
+    with kpi_col1:
+        st.markdown(render_metric_card(
+            LABELS["total_aum"],
+            format_currency(metrics.total_aum),
+            f"{len(df_filtered):,} bonds",
+            "neutral",
+            "blue"
+        ), unsafe_allow_html=True)
+
+    with kpi_col2:
+        st.markdown(render_metric_card(
+            LABELS["wtd_duration"],
+            f"{metrics.weighted_duration:.2f}y",
+            None,
+            "neutral",
+            "purple"
+        ), unsafe_allow_html=True)
+
+    with kpi_col3:
+        carry_delta_type = "positive" if metrics.weighted_net_carry > 0 else "negative"
+        st.markdown(render_metric_card(
+            LABELS["wtd_carry"],
+            format_percentage(metrics.weighted_net_carry),
+            f"{metrics.negative_carry_count} bleeding" if metrics.negative_carry_count > 0 else "All positive",
+            carry_delta_type,
+            "green" if metrics.weighted_net_carry > 0 else "red"
+        ), unsafe_allow_html=True)
+
+    with kpi_col4:
+        st.markdown(render_metric_card(
+            LABELS["htim_locked"],
+            f"{metrics.htim_count}",
+            format_currency(metrics.htm_exposure),
+            "neutral",
+            "yellow"
+        ), unsafe_allow_html=True)
+
+    # ============================================
+    # MAIN TABS
+    # ============================================
     tab1, tab2, tab3 = st.tabs([
-        "📈 The Matrix",
-        "🔬 Optimization Lab",
-        "📋 Management Brief",
+        f"📈 {LABELS['tab_matrix']}",
+        f"🔬 {LABELS['tab_optimization']}",
+        f"📋 {LABELS['tab_brief']}",
     ])
 
     # ============================================
-    # TAB 1: The Matrix (Scatter Plot)
+    # TAB 1: RELATIVE VALUE MATRIX
     # ============================================
     with tab1:
-        st.header("Duration-Yield Matrix with Sector Curves")
+        st.markdown(f'<div class="section-header">{LABELS["duration_yield_matrix"]}</div>', unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            st.markdown(f"**Showing {len(df_filtered):,} bonds** | "
-                       f"Total Exposure: {format_currency(df_filtered['Nominal_USD'].sum())}")
-
-        # Build scatter plot
+        # Build scatter plot with dark theme
         fig = go.Figure()
 
-        # Add scatter points for each sector
-        for sector in selected_sectors:
+        for sector in (selected_sectors or []):
             sector_data = df_filtered[df_filtered["Sector_L1"] == sector]
             if len(sector_data) == 0:
                 continue
 
-            color = SECTOR_COLORS.get(sector, "#999999")
+            color = DARK_SECTOR_COLORS.get(sector, "#6e7681")
+            sector_cn = SECTOR_NAMES_CN.get(sector, sector)
 
-            # Create hover text
+            # Create bilingual hover text
             hover_text = sector_data.apply(
                 lambda row: (
                     f"<b>{row['Ticker']}</b><br>"
-                    f"Name: {row.get('Name', 'N/A')}<br>"
-                    f"Duration: {row['Duration']:.2f}<br>"
-                    f"Yield: {row['Yield']*100:.2f}%<br>"
-                    f"Net Carry: {row['Net_Carry']*100:.2f}%<br>"
-                    f"Z-Score: {row['Z_Score']:.2f}<br>"
-                    f"Nominal: {format_currency(row['Nominal_USD'])}"
+                    f"名称: {row.get('Name', 'N/A')}<br>"
+                    f"━━━━━━━━━━━━<br>"
+                    f"YTM / 收益率: {row['Yield']*100:.2f}%<br>"
+                    f"Duration / 久期: {row['Duration']:.2f}y<br>"
+                    f"OAS / 利差: {row['OAS']:.0f}bp<br>"
+                    f"Net Carry / 净息差: {row['Net_Carry']*100:.2f}%<br>"
+                    f"Z-Score / Z分数: {row['Z_Score']:.2f}<br>"
+                    f"━━━━━━━━━━━━<br>"
+                    f"Notional / 本金: {format_currency(row['Nominal_USD'])}"
                 ),
                 axis=1,
             )
 
+            # Size based on nominal (normalized)
+            sizes = np.clip(sector_data["Nominal_USD"] / 1e6, 5, 25)
+
             fig.add_trace(go.Scatter(
                 x=sector_data["Duration"],
-                y=sector_data["Yield"] * 100,  # Convert to percentage
+                y=sector_data["Yield"] * 100,
                 mode="markers",
-                name=sector,
+                name=f"{sector} / {sector_cn}",
                 marker=dict(
-                    size=8,
+                    size=sizes,
                     color=color,
-                    opacity=0.7,
-                    line=dict(width=1, color="white"),
+                    opacity=0.8,
+                    line=dict(width=1, color="rgba(255,255,255,0.3)"),
                 ),
                 hovertemplate="%{hovertext}<extra></extra>",
                 hovertext=hover_text,
@@ -288,7 +902,7 @@ def main():
                     x_curve, y_curve = filtered_analyzer.get_curve_points(sector, n_points=50)
                     fig.add_trace(go.Scatter(
                         x=x_curve,
-                        y=y_curve * 100,  # Convert to percentage
+                        y=y_curve * 100,
                         mode="lines",
                         name=f"{sector} Curve",
                         line=dict(color=color, width=2, dash="dash"),
@@ -298,45 +912,54 @@ def main():
                 except Exception:
                     pass
 
+        # Apply dark theme layout
         fig.update_layout(
-            xaxis_title="Duration (Years)",
-            yaxis_title="Yield (%)",
-            legend_title="Sector",
+            **PLOTLY_DARK_TEMPLATE["layout"],
+            xaxis_title="Duration / 久期 (Years)",
+            yaxis_title="YTM / 到期收益率 (%)",
             hovermode="closest",
-            height=600,
-            template="plotly_white",
+            height=500,
+            margin=dict(l=60, r=20, t=40, b=60),
             legend=dict(
                 orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1,
+                yanchor="top",
+                y=-0.15,
+                xanchor="center",
+                x=0.5,
+                bgcolor="rgba(22, 27, 34, 0.8)",
+                bordercolor="#30363d",
+                font=dict(size=10),
             ),
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Regression Statistics
-        with st.expander("📊 Regression Statistics by Sector"):
+        # Regression Statistics (collapsed by default)
+        with st.expander("📊 Regression Stats / 回归统计"):
             regression_results = filtered_analyzer.get_regression_results()
             if regression_results:
-                stats_data = [r.to_dict() for r in regression_results.values()]
-                stats_df = pd.DataFrame(stats_data)
-                st.dataframe(stats_df, use_container_width=True, hide_index=True)
-            else:
-                st.info("Not enough data to fit curves")
+                stats_data = []
+                for sector, r in regression_results.items():
+                    stats_data.append({
+                        f"{LABELS['sector']}": f"{sector} / {SECTOR_NAMES_CN.get(sector, sector)}",
+                        "R²": f"{r.r_squared:.4f}",
+                        "N": r.sample_count,
+                        "Dur Range": f"{r.duration_range[0]:.1f}-{r.duration_range[1]:.1f}",
+                        "Residual σ": f"{r.residual_std*100:.2f}%",
+                    })
+                st.dataframe(pd.DataFrame(stats_data), use_container_width=True, hide_index=True)
 
     # ============================================
-    # TAB 2: Optimization Lab
+    # TAB 2: ALPHA OPTIMIZATION LAB
     # ============================================
     with tab2:
-        st.header("Actionable Alpha Identification")
+        opt_col1, opt_col2 = st.columns(2)
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.subheader("🔴 Sell Candidates (Rich & Low Carry)")
-            st.markdown("*Bonds with Z-Score < -1.5 that are expensive relative to their sector curve*")
+        # SELL CANDIDATES
+        with opt_col1:
+            st.markdown(f'<div class="section-header">🔴 {LABELS["sell_candidates"]}</div>', unsafe_allow_html=True)
+            st.markdown("*Z-Score < -1.5 | Expensive relative to sector curve*")
+            st.markdown("*Z分数 < -1.5 | 相对板块曲线偏贵*")
 
             sell_candidates = filtered_analyzer.get_sell_candidates(
                 z_threshold=-1.5,
@@ -344,192 +967,212 @@ def main():
             )
 
             if len(sell_candidates) > 0:
-                display_cols = ["Ticker", "Name", "Sector_L1", "Duration", "Yield", "Net_Carry", "Z_Score", "Nominal_USD"]
-                display_cols = [c for c in display_cols if c in sell_candidates.columns]
+                if st.session_state.mobile_view:
+                    # Card view for mobile
+                    for idx, row in sell_candidates.head(5).iterrows():
+                        st.markdown(render_bond_card(row), unsafe_allow_html=True)
+                    if len(sell_candidates) > 5:
+                        with st.expander(f"{LABELS['show_more']} ({len(sell_candidates)-5} more)"):
+                            for idx, row in sell_candidates.iloc[5:].iterrows():
+                                st.markdown(render_bond_card(row), unsafe_allow_html=True)
+                else:
+                    # Table view for desktop
+                    display_cols = ["Ticker", "Name", "Sector_L1", "Duration", "Yield", "Net_Carry", "Z_Score", "Nominal_USD"]
+                    display_cols = [c for c in display_cols if c in sell_candidates.columns]
 
-                styled_df = sell_candidates[display_cols].copy()
-                styled_df["Yield"] = styled_df["Yield"].apply(format_percentage)
-                styled_df["Net_Carry"] = styled_df["Net_Carry"].apply(format_percentage)
-                styled_df["Nominal_USD"] = styled_df["Nominal_USD"].apply(format_currency)
-                styled_df["Z_Score"] = styled_df["Z_Score"].round(2)
+                    styled_df = sell_candidates[display_cols].copy()
+                    styled_df.columns = ["Ticker", "Name / 名称", LABELS["sector"],
+                                        LABELS["duration"], LABELS["ytm"],
+                                        LABELS["net_carry"], LABELS["z_score"], LABELS["notional"]]
 
-                st.dataframe(
-                    styled_df,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Z_Score": st.column_config.NumberColumn(
-                            "Z-Score",
-                            help="Negative = Rich/Expensive",
-                            format="%.2f",
-                        ),
-                    },
-                )
+                    # Format values
+                    styled_df[LABELS["ytm"]] = sell_candidates["Yield"].apply(format_percentage)
+                    styled_df[LABELS["net_carry"]] = sell_candidates["Net_Carry"].apply(format_percentage)
+                    styled_df[LABELS["notional"]] = sell_candidates["Nominal_USD"].apply(format_currency)
+                    styled_df[LABELS["z_score"]] = sell_candidates["Z_Score"].round(2)
+                    styled_df[LABELS["duration"]] = sell_candidates["Duration"].round(2)
 
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+                # Summary metric
                 total_exposure = sell_candidates["Nominal_USD"].sum()
-                st.metric(
-                    "Total Sell Candidate Exposure",
+                st.markdown(render_metric_card(
+                    "Sell Exposure / 卖出敞口",
                     format_currency(total_exposure),
-                    delta=f"{len(sell_candidates)} bonds",
-                )
+                    f"{len(sell_candidates)} bonds / 债券",
+                    "negative",
+                    "red"
+                ), unsafe_allow_html=True)
             else:
-                st.success("✅ No rich bonds identified with current filters")
+                st.success("✅ No rich bonds identified / 未发现偏贵债券")
 
-        with col2:
-            st.subheader("💸 Bleeding Assets (Negative Carry)")
-            st.markdown("*Bonds where Yield < FTP (costing more to fund than they return)*")
+        # BLEEDING ASSETS
+        with opt_col2:
+            st.markdown(f'<div class="section-header">💸 {LABELS["bleeding_assets"]}</div>', unsafe_allow_html=True)
+            st.markdown("*Yield < FTP | Negative carry positions*")
+            st.markdown("*收益率 < 资金成本 | 负息差持仓*")
 
             bleeding_assets = filtered_analyzer.get_bleeding_assets(exclude_htm=exclude_htm)
 
             if len(bleeding_assets) > 0:
-                display_cols = ["Ticker", "Name", "Sector_L1", "Duration", "Yield", "FTP", "Net_Carry", "Nominal_USD"]
-                display_cols = [c for c in display_cols if c in bleeding_assets.columns]
+                if st.session_state.mobile_view:
+                    # Card view for mobile
+                    for idx, row in bleeding_assets.head(5).iterrows():
+                        st.markdown(render_bond_card(row), unsafe_allow_html=True)
+                    if len(bleeding_assets) > 5:
+                        with st.expander(f"{LABELS['show_more']} ({len(bleeding_assets)-5} more)"):
+                            for idx, row in bleeding_assets.iloc[5:].iterrows():
+                                st.markdown(render_bond_card(row), unsafe_allow_html=True)
+                else:
+                    # Table view for desktop
+                    display_cols = ["Ticker", "Name", "Sector_L1", "Duration", "Yield", "FTP", "Net_Carry", "Nominal_USD"]
+                    display_cols = [c for c in display_cols if c in bleeding_assets.columns]
 
-                styled_df = bleeding_assets[display_cols].copy()
-                styled_df["Yield"] = styled_df["Yield"].apply(format_percentage)
-                styled_df["FTP"] = styled_df["FTP"].apply(format_percentage)
-                styled_df["Net_Carry"] = styled_df["Net_Carry"].apply(format_percentage)
-                styled_df["Nominal_USD"] = styled_df["Nominal_USD"].apply(format_currency)
+                    styled_df = bleeding_assets[display_cols].copy()
+                    styled_df.columns = ["Ticker", "Name / 名称", LABELS["sector"],
+                                        LABELS["duration"], LABELS["ytm"],
+                                        LABELS["ftp"], LABELS["net_carry"], LABELS["notional"]]
 
-                st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                    styled_df[LABELS["ytm"]] = bleeding_assets["Yield"].apply(format_percentage)
+                    styled_df[LABELS["ftp"]] = bleeding_assets["FTP"].apply(format_percentage)
+                    styled_df[LABELS["net_carry"]] = bleeding_assets["Net_Carry"].apply(format_percentage)
+                    styled_df[LABELS["notional"]] = bleeding_assets["Nominal_USD"].apply(format_currency)
+                    styled_df[LABELS["duration"]] = bleeding_assets["Duration"].round(2)
+
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
                 total_bleed = bleeding_assets["Nominal_USD"].sum()
-                annual_drag = (bleeding_assets["Net_Carry"] * bleeding_assets["Nominal_USD"]).sum()
-                st.metric(
-                    "Bleeding Exposure",
+                annual_drag = abs((bleeding_assets["Net_Carry"] * bleeding_assets["Nominal_USD"]).sum())
+                st.markdown(render_metric_card(
+                    "Bleeding Exposure / 失血敞口",
                     format_currency(total_bleed),
-                    delta=f"Annual Drag: {format_currency(abs(annual_drag))}",
-                    delta_color="inverse",
-                )
+                    f"Annual Drag: {format_currency(annual_drag)} / 年化拖累",
+                    "negative",
+                    "yellow"
+                ), unsafe_allow_html=True)
             else:
-                st.success("✅ No negative carry bonds identified")
+                st.success("✅ No negative carry bonds / 无负息差债券")
 
-        st.divider()
+        # Carry Distribution Chart
+        st.markdown(f'<div class="section-header">📊 {LABELS["carry_distribution"]}</div>', unsafe_allow_html=True)
 
-        # Carry Efficiency Analysis
-        st.subheader("📊 Carry Efficiency Distribution")
+        fig_carry = go.Figure()
 
-        fig_carry = px.histogram(
-            df_filtered,
-            x="Carry_Efficiency",
-            nbins=50,
-            color="Sector_L1",
-            color_discrete_map=SECTOR_COLORS,
-            title="Carry Efficiency (Net Carry / Duration)",
-            labels={"Carry_Efficiency": "Carry Efficiency", "count": "Count"},
+        for sector in (selected_sectors or []):
+            sector_data = df_filtered[df_filtered["Sector_L1"] == sector]
+            if len(sector_data) == 0:
+                continue
+
+            color = DARK_SECTOR_COLORS.get(sector, "#6e7681")
+
+            fig_carry.add_trace(go.Histogram(
+                x=sector_data["Carry_Efficiency"] * 100,  # Convert to bps-like
+                name=f"{sector} / {SECTOR_NAMES_CN.get(sector, sector)}",
+                marker_color=color,
+                opacity=0.7,
+            ))
+
+        fig_carry.add_vline(
+            x=0,
+            line_dash="dash",
+            line_color="#f85149",
+            annotation_text="Zero / 零",
+            annotation_font_color="#f85149",
         )
-        fig_carry.add_vline(x=0, line_dash="dash", line_color="red", annotation_text="Zero Efficiency")
-        fig_carry.update_layout(height=400, template="plotly_white")
+
+        fig_carry.update_layout(
+            **PLOTLY_DARK_TEMPLATE["layout"],
+            xaxis_title="Carry Efficiency / 息差效率 (%/yr)",
+            yaxis_title="Count / 数量",
+            barmode="overlay",
+            height=350,
+            margin=dict(l=60, r=20, t=20, b=60),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.2,
+                xanchor="center",
+                x=0.5,
+            ),
+        )
 
         st.plotly_chart(fig_carry, use_container_width=True)
 
     # ============================================
-    # TAB 3: Management Brief
+    # TAB 3: EXECUTIVE BRIEF
     # ============================================
     with tab3:
-        st.header("Executive Summary Generator")
+        brief_col1, brief_col2 = st.columns([2, 1])
 
-        if st.button("📄 Generate Executive Summary", type="primary"):
-            with st.spinner("Generating summary..."):
-                summary = filtered_analyzer.generate_executive_summary()
-                st.markdown(summary)
+        with brief_col1:
+            st.markdown(f'<div class="section-header">📄 Executive Summary / 管理摘要</div>', unsafe_allow_html=True)
 
-                # Download button
-                st.download_button(
-                    label="📥 Download Summary (Markdown)",
-                    data=summary,
-                    file_name="portfolio_summary.md",
-                    mime="text/markdown",
-                )
+            if st.button(f"🔄 {LABELS['generate_summary']}", type="primary"):
+                with st.spinner(LABELS["loading"]):
+                    summary = filtered_analyzer.generate_executive_summary()
+                    st.markdown(summary)
 
-        st.divider()
+                    st.download_button(
+                        label=f"📥 {LABELS['download_summary']}",
+                        data=summary,
+                        file_name="portfolio_summary.md",
+                        mime="text/markdown",
+                    )
 
-        # Key Metrics Overview
-        st.subheader("📈 Portfolio Metrics")
+        with brief_col2:
+            st.markdown(f'<div class="section-header">{LABELS["sector_allocation"]}</div>', unsafe_allow_html=True)
 
-        metrics = filtered_analyzer.calculate_portfolio_metrics()
+            # Donut chart for sector allocation
+            sector_values = list(metrics.sector_exposures.values())
+            sector_names = [f"{k} / {SECTOR_NAMES_CN.get(k, k)}" for k in metrics.sector_exposures.keys()]
+            sector_colors = [DARK_SECTOR_COLORS.get(k, "#6e7681") for k in metrics.sector_exposures.keys()]
 
-        col1, col2, col3, col4 = st.columns(4)
+            fig_sector = go.Figure(data=[go.Pie(
+                labels=sector_names,
+                values=sector_values,
+                hole=0.5,
+                marker_colors=sector_colors,
+                textinfo="percent",
+                textfont=dict(color="#e6edf3", size=10),
+                hovertemplate="<b>%{label}</b><br>%{value:$,.0f}<br>%{percent}<extra></extra>",
+            )])
 
-        with col1:
-            st.metric(
-                "Total AUM",
-                format_currency(metrics.total_aum),
-                help="Total Assets Under Management",
-            )
-            st.metric(
-                "Holdings",
-                f"{filtered_analyzer.df.shape[0]:,}",
-            )
-
-        with col2:
-            st.metric(
-                "Weighted Duration",
-                f"{metrics.weighted_duration:.2f} yrs",
-                help="Market-value weighted average duration",
-            )
-            st.metric(
-                "Weighted Yield",
-                format_percentage(metrics.weighted_yield),
+            fig_sector.update_layout(
+                **PLOTLY_DARK_TEMPLATE["layout"],
+                height=300,
+                margin=dict(l=20, r=20, t=20, b=20),
+                showlegend=False,
             )
 
-        with col3:
-            st.metric(
-                "Net Carry (Wtd)",
-                format_percentage(metrics.weighted_net_carry),
-                delta="Positive" if metrics.weighted_net_carry > 0 else "Negative",
-                delta_color="normal" if metrics.weighted_net_carry > 0 else "inverse",
-            )
-            st.metric(
-                "Negative Carry Count",
-                metrics.negative_carry_count,
-                delta=format_currency(metrics.negative_carry_exposure),
-                delta_color="inverse",
-            )
+            st.plotly_chart(fig_sector, use_container_width=True)
 
-        with col4:
-            st.metric(
-                "Tradeable Holdings",
-                metrics.tradeable_count,
-                help="Bonds that can be sold (non-HTM)",
-            )
-            st.metric(
-                "HTM Locked",
-                metrics.htim_count,
-                delta=format_currency(metrics.htm_exposure),
-            )
+        # Data Export Section
+        st.markdown(f'<div class="section-header">📥 {LABELS["data_export"]}</div>', unsafe_allow_html=True)
 
-        # Sector Allocation Chart
-        st.subheader("🥧 Sector Allocation")
+        export_col1, export_col2, export_col3 = st.columns(3)
 
-        fig_sector = px.pie(
-            values=list(metrics.sector_exposures.values()),
-            names=list(metrics.sector_exposures.keys()),
-            color=list(metrics.sector_exposures.keys()),
-            color_discrete_map=SECTOR_COLORS,
-            hole=0.4,
-        )
-        fig_sector.update_layout(height=400)
-
-        st.plotly_chart(fig_sector, use_container_width=True)
-
-        # Full Data Export
-        st.subheader("📥 Data Export")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
+        with export_col1:
             csv_buffer = io.StringIO()
             df_filtered.to_csv(csv_buffer, index=False)
             st.download_button(
-                label="Download Filtered Data (CSV)",
+                label=f"📊 Full Portfolio / 完整组合 (CSV)",
                 data=csv_buffer.getvalue(),
-                file_name="portfolio_filtered.csv",
+                file_name="portfolio_full.csv",
                 mime="text/csv",
             )
 
-        with col2:
-            # Regression results export
+        with export_col2:
+            if len(sell_candidates) > 0:
+                sell_csv = io.StringIO()
+                sell_candidates.to_csv(sell_csv, index=False)
+                st.download_button(
+                    label=f"🔴 Sell List / 卖出清单 (CSV)",
+                    data=sell_csv.getvalue(),
+                    file_name="sell_candidates.csv",
+                    mime="text/csv",
+                )
+
+        with export_col3:
             regression_results = filtered_analyzer.get_regression_results()
             if regression_results:
                 reg_data = [r.to_dict() for r in regression_results.values()]
@@ -537,7 +1180,7 @@ def main():
                 reg_csv = io.StringIO()
                 reg_df.to_csv(reg_csv, index=False)
                 st.download_button(
-                    label="Download Regression Stats (CSV)",
+                    label=f"📈 Regression / 回归统计 (CSV)",
                     data=reg_csv.getvalue(),
                     file_name="regression_stats.csv",
                     mime="text/csv",
