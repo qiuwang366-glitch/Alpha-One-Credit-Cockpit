@@ -17,6 +17,7 @@ import io
 import sys
 from pathlib import Path
 from typing import Optional
+import importlib
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,14 @@ import streamlit as st
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Force reload of modules during development to avoid cache issues
+import src.module_b.analytics
+import src.module_b.data_loader
+import src.utils.constants
+importlib.reload(src.utils.constants)
+importlib.reload(src.module_b.data_loader)
+importlib.reload(src.module_b.analytics)
 
 from src.module_b.data_loader import DataLoader, DataValidationError
 from src.module_b.analytics import PortfolioAnalyzer
