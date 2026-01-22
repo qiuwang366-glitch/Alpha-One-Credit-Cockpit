@@ -562,6 +562,58 @@ DARK_SECTOR_COLORS = {
     "Other": "#6e7681",
 }
 
+# Additional vibrant colors for unknown sectors (auto-assigned)
+FALLBACK_COLORS = [
+    "#ff7eb9",  # Pink
+    "#7ee8fa",  # Cyan
+    "#ffc65d",  # Orange
+    "#96f2d7",  # Mint
+    "#d0bfff",  # Lavender
+    "#ffa94d",  # Peach
+    "#74c0fc",  # Sky blue
+    "#a9e34b",  # Lime
+    "#ff8787",  # Coral
+    "#da77f2",  # Purple
+    "#4dabf7",  # Blue
+    "#ffe066",  # Yellow
+]
+
+def get_sector_color(sector: str, sector_color_map: dict = None) -> str:
+    """
+    Get color for a sector with dynamic fallback for unknown sectors.
+
+    Args:
+        sector: Sector name
+        sector_color_map: Existing color mapping dictionary (updated in-place)
+
+    Returns:
+        Hex color code
+    """
+    if sector_color_map is None:
+        sector_color_map = {}
+
+    # Check if color already assigned
+    if sector in DARK_SECTOR_COLORS:
+        return DARK_SECTOR_COLORS[sector]
+
+    if sector in sector_color_map:
+        return sector_color_map[sector]
+
+    # Assign a new color from fallback pool
+    used_colors = set(sector_color_map.values())
+    available_colors = [c for c in FALLBACK_COLORS if c not in used_colors]
+
+    if available_colors:
+        new_color = available_colors[0]
+    else:
+        # If all fallback colors used, generate a random one
+        import random
+        hue = random.randint(0, 360)
+        new_color = f"hsl({hue}, 70%, 60%)"
+
+    sector_color_map[sector] = new_color
+    return new_color
+
 
 # ============================================
 # UTILITY FUNCTIONS
@@ -697,10 +749,17 @@ def main():
     if "selected_ticker" not in st.session_state:
         st.session_state.selected_ticker = None
 
+    # Initialize dynamic sector color map in session state
+    if "sector_color_map" not in st.session_state:
+        st.session_state.sector_color_map = {}
+
     # ============================================
     # FILTERS (Main Page Expander for Mobile)
     # ============================================
-    with st.expander(f"⚙️ {LABELS['filter_settings']}", expanded=False):
+    # Auto-expand filter settings on first visit (when no data loaded)
+    expand_filters = not st.session_state.data_loaded
+
+    with st.expander(f"⚙️ {LABELS['filter_settings']}", expanded=expand_filters):
         # Add model selection at the top
         st.markdown("**🔬 Curve Model / 曲线模型**")
         model_col1, model_col2 = st.columns(2)
@@ -769,6 +828,10 @@ def main():
     # ============================================
     # DATA LOADING
     # ============================================
+    # Auto-load sample data on first visit if no data is loaded yet
+    if not st.session_state.data_loaded and not uploaded_file:
+        use_sample = True
+
     if uploaded_file or use_sample:
         try:
             loader = DataLoader()
@@ -890,7 +953,7 @@ def main():
             if len(sector_data) == 0:
                 continue
 
-            color = DARK_SECTOR_COLORS.get(sector, "#6e7681")
+            color = get_sector_color(sector, st.session_state.sector_color_map)
             sector_cn = SECTOR_NAMES_CN.get(sector, sector)
 
             # Split data into selected and non-selected
@@ -1169,7 +1232,7 @@ def main():
                 for idx, row in sibling_bonds.iterrows():
                     is_selected = row["Ticker"] == selected_ticker
                     marker_size = 20 if is_selected else 12
-                    marker_color = "#FFD700" if is_selected else DARK_SECTOR_COLORS.get(row["Sector_L1"], "#6e7681")
+                    marker_color = "#FFD700" if is_selected else get_sector_color(row["Sector_L1"], st.session_state.sector_color_map)
                     marker_symbol = "star" if is_selected else "circle"
 
                     hover_text = (
@@ -1206,7 +1269,7 @@ def main():
                             y=y_curve * 100,
                             mode="lines",
                             name=f"{sector} Curve",
-                            line=dict(color=DARK_SECTOR_COLORS.get(sector, "#6e7681"), width=2, dash="dash"),
+                            line=dict(color=get_sector_color(sector, st.session_state.sector_color_map), width=2, dash="dash"),
                             hoverinfo="skip",
                         ))
                     except Exception:
@@ -1342,7 +1405,7 @@ def main():
             if len(sector_data) == 0:
                 continue
 
-            color = DARK_SECTOR_COLORS.get(sector, "#6e7681")
+            color = get_sector_color(sector, st.session_state.sector_color_map)
 
             fig_carry.add_trace(go.Histogram(
                 x=sector_data["Carry_Efficiency"] * 100,  # Convert to bps-like
@@ -1407,7 +1470,7 @@ def main():
             # Donut chart for sector allocation
             sector_values = list(metrics.sector_exposures.values())
             sector_names = [f"{k} / {SECTOR_NAMES_CN.get(k, k)}" for k in metrics.sector_exposures.keys()]
-            sector_colors = [DARK_SECTOR_COLORS.get(k, "#6e7681") for k in metrics.sector_exposures.keys()]
+            sector_colors = [get_sector_color(k, st.session_state.sector_color_map) for k in metrics.sector_exposures.keys()]
 
             fig_sector = go.Figure(data=[go.Pie(
                 labels=sector_names,
