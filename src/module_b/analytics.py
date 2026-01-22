@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy.optimize import curve_fit
 
 from ..utils.constants import (
     SECTOR_COLORS,
@@ -21,6 +22,33 @@ from ..utils.constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def nelson_siegel(tau: np.ndarray, beta_0: float, beta_1: float, beta_2: float, lambda_: float) -> np.ndarray:
+    """
+    Nelson-Siegel yield curve model.
+
+    Formula: y(τ) = β₀ + β₁ * [(1-exp(-τ/λ)) / (τ/λ)] + β₂ * [(1-exp(-τ/λ)) / (τ/λ) - exp(-τ/λ)]
+
+    Args:
+        tau: Maturity/duration values
+        beta_0: Long-term level (asymptotic yield as τ → ∞)
+        beta_1: Short-term component (loading on short factor)
+        beta_2: Medium-term component (loading on curvature factor)
+        lambda_: Decay parameter (controls where curvature peaks)
+
+    Returns:
+        Predicted yield values
+    """
+    # Avoid division by zero
+    tau = np.maximum(tau, 1e-6)
+    tau_lambda = tau / lambda_
+
+    # Calculate factors
+    factor_1 = (1 - np.exp(-tau_lambda)) / tau_lambda
+    factor_2 = factor_1 - np.exp(-tau_lambda)
+
+    return beta_0 + beta_1 * factor_1 + beta_2 * factor_2
 
 
 @dataclass
@@ -73,6 +101,47 @@ class RegressionResult:
 
 
 @dataclass
+class NelsonSiegelResult:
+    """
+    Results from Nelson-Siegel curve fitting.
+
+    Stores Nelson-Siegel parameters and statistics for the yield-duration
+    relationship within a sector.
+
+    Yield(τ) = β₀ + β₁*f₁(τ) + β₂*f₂(τ)
+    where f₁, f₂ are Nelson-Siegel factor loadings
+    """
+
+    sector: str
+    beta_0: float  # Long-term level
+    beta_1: float  # Short-term component
+    beta_2: float  # Medium-term/curvature component
+    lambda_: float  # Decay parameter
+    r_squared: float
+    sample_count: int
+    duration_range: Tuple[float, float]
+    residual_std: float
+
+    def predict(self, duration: np.ndarray) -> np.ndarray:
+        """Predict yield for given duration values using Nelson-Siegel."""
+        return nelson_siegel(duration, self.beta_0, self.beta_1, self.beta_2, self.lambda_)
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for display."""
+        return {
+            "Sector": self.sector,
+            "R²": f"{self.r_squared:.4f}",
+            "Sample Size": self.sample_count,
+            "Duration Range": f"{self.duration_range[0]:.1f} - {self.duration_range[1]:.1f}",
+            "Residual Std": f"{self.residual_std * 100:.2f}%",
+            "β₀ (Long-Term)": f"{self.beta_0 * 100:.2f}%",
+            "β₁ (Short-Term)": f"{self.beta_1 * 100:.2f}%",
+            "β₂ (Curvature)": f"{self.beta_2 * 100:.2f}%",
+            "λ (Decay)": f"{self.lambda_:.2f}",
+        }
+
+
+@dataclass
 class PortfolioMetrics:
     """Aggregate portfolio-level metrics."""
 
@@ -106,38 +175,43 @@ class PortfolioAnalyzer:
         >>> candidates = analyzer.get_sell_candidates(z_threshold=-1.5)
     """
 
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, model_type: str = "quadratic"):
         """
         Initialize analyzer with cleaned portfolio data.
 
         Args:
             df: Cleaned DataFrame from DataLoader
+            model_type: Type of curve model ("quadratic" or "nelson_siegel")
         """
         self.df = df.copy()
+        self.model_type = model_type
         self._regression_results: Dict[str, RegressionResult] = {}
+        self._nelson_siegel_results: Dict[str, NelsonSiegelResult] = {}
         self._is_fitted = False
 
     def fit_sector_curves(
         self,
         min_samples: int = MIN_SAMPLES_FOR_REGRESSION,
         sectors: Optional[List[str]] = None,
-    ) -> Dict[str, RegressionResult]:
+    ):
         """
-        Fit quadratic yield-duration curves for each sector.
+        Fit yield-duration curves for each sector using the specified model.
 
-        Performs stratified regression: Yield = a*Duration² + b*Duration + c
+        For quadratic: Yield = a*Duration² + b*Duration + c
+        For Nelson-Siegel: Yield = β₀ + β₁*f₁(τ) + β₂*f₂(τ)
 
         Args:
             min_samples: Minimum bonds required to fit a curve
             sectors: Specific sectors to fit (None = all)
 
         Returns:
-            Dictionary mapping sector names to RegressionResult objects
+            Dictionary mapping sector names to result objects
         """
         if sectors is None:
             sectors = self.df["Sector_L1"].unique()
 
         self._regression_results = {}
+        self._nelson_siegel_results = {}
 
         for sector in sectors:
             sector_df = self.df[self.df["Sector_L1"] == sector]
@@ -149,17 +223,23 @@ class PortfolioAnalyzer:
                 )
                 continue
 
-            result = self._fit_single_curve(sector, sector_df)
-            if result is not None:
-                self._regression_results[sector] = result
+            if self.model_type == "nelson_siegel":
+                result = self._fit_nelson_siegel_curve(sector, sector_df)
+                if result is not None:
+                    self._nelson_siegel_results[sector] = result
+            else:  # quadratic
+                result = self._fit_single_curve(sector, sector_df)
+                if result is not None:
+                    self._regression_results[sector] = result
 
         # Calculate Z-scores after fitting
         self._calculate_z_scores()
         self._is_fitted = True
 
-        logger.info(f"Fitted curves for {len(self._regression_results)} sectors")
+        results_count = len(self._nelson_siegel_results) if self.model_type == "nelson_siegel" else len(self._regression_results)
+        logger.info(f"Fitted {self.model_type} curves for {results_count} sectors")
 
-        return self._regression_results
+        return self._nelson_siegel_results if self.model_type == "nelson_siegel" else self._regression_results
 
     def _fit_single_curve(
         self,
@@ -205,13 +285,98 @@ class PortfolioAnalyzer:
             logger.error(f"Failed to fit curve for sector '{sector}': {e}")
             return None
 
+    def _fit_nelson_siegel_curve(
+        self,
+        sector: str,
+        sector_df: pd.DataFrame,
+    ) -> Optional[NelsonSiegelResult]:
+        """
+        Fit a Nelson-Siegel curve for a single sector.
+
+        Uses scipy.optimize.curve_fit to calibrate the four parameters:
+        β₀, β₁, β₂, λ
+        """
+        # Extract clean data
+        mask = sector_df["Duration"].notna() & sector_df["Yield"].notna()
+        clean_df = sector_df[mask]
+
+        if len(clean_df) < MIN_SAMPLES_FOR_REGRESSION:
+            return None
+
+        x = clean_df["Duration"].values
+        y = clean_df["Yield"].values
+
+        try:
+            # Initial parameter guesses
+            # β₀: use mean yield as proxy for long-term level
+            # β₁: use difference between short and long yields
+            # β₂: curvature, start with small value
+            # λ: decay parameter, typically around mean duration
+            y_mean = np.mean(y)
+            y_first = y[np.argmin(x)] if len(x) > 0 else y_mean
+            y_last = y[np.argmax(x)] if len(x) > 0 else y_mean
+
+            p0 = [
+                y_mean,              # β₀
+                y_first - y_mean,    # β₁
+                0.01,                # β₂
+                max(np.mean(x), 1.0) # λ (ensure positive)
+            ]
+
+            # Parameter bounds (all yields in decimal, e.g., 0.05 = 5%)
+            bounds = (
+                [-0.5, -0.5, -0.5, 0.1],      # lower bounds
+                [0.5, 0.5, 0.5, 50.0]         # upper bounds
+            )
+
+            # Fit using curve_fit
+            params, _ = curve_fit(
+                nelson_siegel,
+                x,
+                y,
+                p0=p0,
+                bounds=bounds,
+                maxfev=5000,
+            )
+
+            beta_0, beta_1, beta_2, lambda_ = params
+
+            # Calculate R-squared
+            y_pred = nelson_siegel(x, beta_0, beta_1, beta_2, lambda_)
+            ss_res = np.sum((y - y_pred) ** 2)
+            ss_tot = np.sum((y - np.mean(y)) ** 2)
+            r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+
+            # Calculate residual standard deviation
+            residuals = y - y_pred
+            residual_std = np.std(residuals)
+
+            return NelsonSiegelResult(
+                sector=sector,
+                beta_0=beta_0,
+                beta_1=beta_1,
+                beta_2=beta_2,
+                lambda_=lambda_,
+                r_squared=r_squared,
+                sample_count=len(clean_df),
+                duration_range=(x.min(), x.max()),
+                residual_std=residual_std,
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to fit Nelson-Siegel curve for sector '{sector}': {e}")
+            return None
+
     def _calculate_z_scores(self) -> None:
         """Calculate Z-scores for all bonds based on fitted curves."""
         self.df["Model_Yield"] = np.nan
         self.df["Residual"] = np.nan
         self.df["Z_Score"] = np.nan
 
-        for sector, result in self._regression_results.items():
+        # Choose the appropriate results dict based on model type
+        results = self._nelson_siegel_results if self.model_type == "nelson_siegel" else self._regression_results
+
+        for sector, result in results.items():
             mask = self.df["Sector_L1"] == sector
 
             # Calculate model yield
@@ -229,11 +394,11 @@ class PortfolioAnalyzer:
                 z_scores = residuals / result.residual_std
                 self.df.loc[mask, "Z_Score"] = z_scores
 
-    def get_regression_results(self) -> Dict[str, RegressionResult]:
+    def get_regression_results(self):
         """Get fitted regression results by sector."""
         if not self._is_fitted:
             raise ValueError("Must call fit_sector_curves() first")
-        return self._regression_results
+        return self._nelson_siegel_results if self.model_type == "nelson_siegel" else self._regression_results
 
     def get_curve_points(
         self,
@@ -250,10 +415,13 @@ class PortfolioAnalyzer:
         Returns:
             Tuple of (duration_array, yield_array)
         """
-        if sector not in self._regression_results:
+        # Choose the appropriate results dict
+        results = self._nelson_siegel_results if self.model_type == "nelson_siegel" else self._regression_results
+
+        if sector not in results:
             raise ValueError(f"No curve fitted for sector '{sector}'")
 
-        result = self._regression_results[sector]
+        result = results[sector]
         x = np.linspace(result.duration_range[0], result.duration_range[1], n_points)
         y = result.predict(x)
 
