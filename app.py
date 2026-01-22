@@ -1212,6 +1212,154 @@ def main():
                         st.markdown("ℹ️ **Fair Value / 公允价值**")
                         st.markdown("Hold / 持有")
 
+            # ============================================
+            # TOTAL RETURN ANALYSIS
+            # ============================================
+            st.markdown("**📈 Total Return Analysis / 总回报分析**")
+            st.markdown("*Rolldown, Carry, and Breakeven Spread Analysis / 滚动收益、息差及盈亏平衡分析*")
+
+            # Calculate total return analysis
+            total_return = filtered_analyzer.calculate_total_return_analysis(selected_ticker)
+
+            if total_return is not None:
+                # Create waterfall chart showing return components
+                return_col1, return_col2 = st.columns([2, 1])
+
+                with return_col1:
+                    # Waterfall chart data
+                    categories = [
+                        "Current Yield<br>当前收益率",
+                        "Rolldown Effect<br>滚动效应",
+                        "Funding Cost<br>资金成本",
+                        "Net Return<br>净回报"
+                    ]
+
+                    # Values for waterfall
+                    yield_val = total_return.current_yield * 100
+                    rolldown_val = total_return.rolldown_price_return * 100
+                    funding_val = -total_return.funding_cost * 100  # Negative for cost
+                    net_return_val = (total_return.current_yield + total_return.rolldown_price_return - total_return.funding_cost) * 100
+
+                    # Measure types for waterfall
+                    measure = ["relative", "relative", "relative", "total"]
+
+                    # Colors
+                    colors = ["#3fb950", "#58a6ff", "#f85149", "#a371f7"]
+
+                    fig_waterfall = go.Figure(go.Waterfall(
+                        name="Return Components",
+                        orientation="v",
+                        measure=measure,
+                        x=categories,
+                        y=[yield_val, rolldown_val, funding_val, net_return_val],
+                        textposition="outside",
+                        text=[f"{yield_val:.2f}%", f"{rolldown_val:+.2f}%", f"{funding_val:.2f}%", f"{net_return_val:.2f}%"],
+                        textfont=dict(color="#e6edf3", size=11),
+                        connector={"line": {"color": "#30363d", "width": 1}},
+                        decreasing={"marker": {"color": "#f85149"}},
+                        increasing={"marker": {"color": "#3fb950"}},
+                        totals={"marker": {"color": "#a371f7"}},
+                    ))
+
+                    apply_dark_theme(
+                        fig_waterfall,
+                        title="Return Decomposition / 回报分解",
+                        yaxis_title="Return / 回报 (%)",
+                        height=350,
+                        margin=dict(l=60, r=20, t=60, b=80),
+                        showlegend=False,
+                    )
+
+                    st.plotly_chart(fig_waterfall, use_container_width=True)
+
+                with return_col2:
+                    # Safety Buffer / Breakeven Spread Metric
+                    breakeven_bps = total_return.breakeven_spread_bps
+
+                    # Determine color based on safety level
+                    if breakeven_bps >= 50:
+                        buffer_accent = "green"
+                        buffer_status = "✅ Safe / 安全"
+                    elif breakeven_bps >= 20:
+                        buffer_accent = "yellow"
+                        buffer_status = "⚠️ Moderate / 中等"
+                    else:
+                        buffer_accent = "red"
+                        buffer_status = "🔴 At Risk / 风险"
+
+                    st.markdown(render_metric_card(
+                        "Breakeven Spread / 盈亏平衡",
+                        f"{breakeven_bps:.0f} bps",
+                        buffer_status,
+                        "positive" if breakeven_bps >= 50 else "neutral" if breakeven_bps >= 20 else "negative",
+                        buffer_accent
+                    ), unsafe_allow_html=True)
+
+                    st.markdown(render_metric_card(
+                        "Net Carry / 净息差",
+                        f"{total_return.net_carry * 100:.2f}%",
+                        f"vs FTP: {total_return.funding_cost * 100:.2f}%",
+                        "positive" if total_return.net_carry > 0 else "negative",
+                        "green" if total_return.net_carry > 0 else "red"
+                    ), unsafe_allow_html=True)
+
+                    st.markdown(render_metric_card(
+                        "Rolldown (1Y) / 滚动效应",
+                        f"{total_return.rolldown_price_return * 100:+.2f}%",
+                        f"D: {total_return.current_duration:.1f}y → {total_return.rolled_duration:.1f}y",
+                        "positive" if total_return.rolldown_price_return > 0 else "negative",
+                        "blue"
+                    ), unsafe_allow_html=True)
+
+                # Detailed breakdown table
+                with st.expander("📊 Detailed Return Breakdown / 详细回报分解"):
+                    breakdown_data = {
+                        "Component / 组成部分": [
+                            "Current Yield / 当前收益率",
+                            "Model Yield (at Duration) / 模型收益率",
+                            "Rolled Yield (D-1) / 滚动后收益率",
+                            "Yield Change (Rolldown) / 收益率变化",
+                            "Rolldown Price Return / 滚动价格回报",
+                            "Funding Cost (FTP) / 资金成本",
+                            "Net Carry / 净息差",
+                            "Total Expected Return / 预期总回报",
+                            "Breakeven Spread / 盈亏平衡利差"
+                        ],
+                        "Value / 数值": [
+                            f"{total_return.current_yield * 100:.3f}%",
+                            f"{total_return.current_model_yield * 100:.3f}%",
+                            f"{total_return.rolled_model_yield * 100:.3f}%",
+                            f"{total_return.rolldown_yield_change * 100:+.3f}%",
+                            f"{total_return.rolldown_price_return * 100:+.3f}%",
+                            f"{total_return.funding_cost * 100:.3f}%",
+                            f"{total_return.net_carry * 100:+.3f}%",
+                            f"{total_return.total_expected_return * 100:.3f}%",
+                            f"{total_return.breakeven_spread_bps:.1f} bps"
+                        ],
+                        "Explanation / 说明": [
+                            "Actual bond yield / 实际债券收益率",
+                            "Fitted curve yield at current duration / 当前久期的拟合曲线收益率",
+                            "Fitted curve yield at duration - 1 year / 久期减1年后的拟合曲线收益率",
+                            "Change in yield from rolling down curve / 沿曲线滚动的收益率变化",
+                            "≈ -Duration × Yield Change / 约等于 -久期 × 收益率变化",
+                            "Transfer pricing rate / 资金转移定价利率",
+                            "Yield - Funding Cost / 收益率 - 资金成本",
+                            "Yield + Rolldown Effect / 收益率 + 滚动效应",
+                            "Net Carry ÷ Duration (safety buffer) / 净息差 ÷ 久期 (安全缓冲)"
+                        ]
+                    }
+                    st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
+
+                    st.markdown("""
+                    **Interpretation / 解释:**
+                    - **Breakeven Spread** tells you how much credit spreads can widen before your 1-year carry is wiped out
+                    - **盈亏平衡利差**表示信用利差可以扩大多少，才会抵消1年的息差收益
+                    - Higher breakeven = more safety margin / 更高的盈亏平衡 = 更大的安全边际
+                    """)
+            else:
+                st.warning("Unable to calculate total return analysis. Curve may not be fitted for this sector.")
+                st.warning("无法计算总回报分析。该板块可能没有拟合曲线。")
+
             # Issuer Curve Analysis
             st.markdown("**🏢 Issuer Curve / 发行人曲线**")
 

@@ -159,6 +159,46 @@ class PortfolioMetrics:
     accounting_breakdown: Dict[str, float] = field(default_factory=dict)
 
 
+@dataclass
+class TotalReturnAnalysis:
+    """
+    Results from total return analysis for a single bond.
+
+    Calculates rolldown effect, breakeven spread, and total expected return
+    based on the fitted yield curve.
+    """
+
+    ticker: str
+    sector: str
+    current_duration: float
+    rolled_duration: float  # duration - 1 year
+    current_yield: float  # actual bond yield
+    current_model_yield: float  # model yield at current duration
+    rolled_model_yield: float  # model yield at duration - 1
+    rolldown_yield_change: float  # yield change from rolling down
+    rolldown_price_return: float  # price return from rolldown (approx)
+    funding_cost: float  # FTP
+    net_carry: float  # yield - funding cost
+    total_expected_return: float  # yield + rolldown effect
+    breakeven_spread_bps: float  # how much spread can widen (in bps)
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for display."""
+        return {
+            "Ticker": self.ticker,
+            "Sector": self.sector,
+            "Duration": f"{self.current_duration:.2f}y",
+            "Current Yield": f"{self.current_yield * 100:.2f}%",
+            "Model Yield": f"{self.current_model_yield * 100:.2f}%",
+            "Rolled Yield (D-1)": f"{self.rolled_model_yield * 100:.2f}%",
+            "Rolldown Effect": f"{self.rolldown_price_return * 100:.2f}%",
+            "Funding Cost (FTP)": f"{self.funding_cost * 100:.2f}%",
+            "Net Carry": f"{self.net_carry * 100:.2f}%",
+            "Total Expected Return": f"{self.total_expected_return * 100:.2f}%",
+            "Breakeven Spread": f"{self.breakeven_spread_bps:.0f} bps",
+        }
+
+
 class PortfolioAnalyzer:
     """
     Quantitative analyzer for fixed income portfolios.
@@ -426,6 +466,98 @@ class PortfolioAnalyzer:
         y = result.predict(x)
 
         return x, y
+
+    def calculate_total_return_analysis(
+        self,
+        ticker: str,
+        holding_period: float = 1.0,
+    ) -> Optional[TotalReturnAnalysis]:
+        """
+        Calculate total return analysis for a specific bond.
+
+        This calculates:
+        1. Rolldown: Theoretical yield change as duration decreases over time
+        2. Price return from rolling down the curve
+        3. Total expected return = Current Yield + Rolldown Effect
+        4. Breakeven spread = Net Carry / Duration (how much spread can widen)
+
+        Args:
+            ticker: Bond ticker to analyze
+            holding_period: Holding period in years (default: 1 year)
+
+        Returns:
+            TotalReturnAnalysis object or None if calculation fails
+        """
+        if not self._is_fitted:
+            raise ValueError("Must call fit_sector_curves() first")
+
+        # Get bond data
+        bond_mask = self.df["Ticker"] == ticker
+        if not bond_mask.any():
+            logger.warning(f"Ticker '{ticker}' not found in portfolio")
+            return None
+
+        bond = self.df[bond_mask].iloc[0]
+        sector = bond["Sector_L1"]
+
+        # Choose the appropriate results dict
+        results = self._nelson_siegel_results if self.model_type == "nelson_siegel" else self._regression_results
+
+        if sector not in results:
+            logger.warning(f"No fitted curve for sector '{sector}'")
+            return None
+
+        curve_result = results[sector]
+
+        # Get bond properties
+        current_duration = bond["Duration"]
+        current_yield = bond["Yield"]
+        funding_cost = bond.get("FTP", 0.0)
+        net_carry = bond.get("Net_Carry", current_yield - funding_cost)
+
+        # Calculate rolled duration (duration after holding period)
+        rolled_duration = max(current_duration - holding_period, 0.1)
+
+        # Get model yields at current and rolled durations
+        current_model_yield = float(curve_result.predict(np.array([current_duration]))[0])
+        rolled_model_yield = float(curve_result.predict(np.array([rolled_duration]))[0])
+
+        # Calculate rolldown effect
+        # Rolldown yield change: negative if curve is upward sloping (yield decreases)
+        rolldown_yield_change = rolled_model_yield - current_model_yield
+
+        # Price return from rolldown ≈ -Duration × Yield Change
+        # If yield drops (negative change), price goes up (positive return)
+        rolldown_price_return = -current_duration * rolldown_yield_change
+
+        # Total expected return = Current Yield (income) + Rolldown price return
+        total_expected_return = current_yield + rolldown_price_return
+
+        # Breakeven spread calculation
+        # How much can spreads widen (in bps) to wipe out 1-year carry?
+        # Price loss from spread widening ≈ Duration × ΔSpread
+        # Set this equal to net carry: Duration × ΔSpread = Net_Carry
+        # ΔSpread = Net_Carry / Duration
+        if current_duration > 0:
+            breakeven_spread_bps = (net_carry / current_duration) * 10000  # Convert to bps
+        else:
+            breakeven_spread_bps = float('inf')
+
+        return TotalReturnAnalysis(
+            ticker=ticker,
+            sector=sector,
+            current_duration=current_duration,
+            rolled_duration=rolled_duration,
+            current_yield=current_yield,
+            current_model_yield=current_model_yield,
+            rolled_model_yield=rolled_model_yield,
+            rolldown_yield_change=rolldown_yield_change,
+            rolldown_price_return=rolldown_price_return,
+            funding_cost=funding_cost,
+            net_carry=net_carry,
+            total_expected_return=total_expected_return,
+            breakeven_spread_bps=breakeven_spread_bps,
+        )
 
     def get_sell_candidates(
         self,
