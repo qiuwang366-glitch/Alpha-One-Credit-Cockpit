@@ -504,38 +504,39 @@ SECTOR_NAMES_CN = {
 }
 
 # ============================================
-# PLOTLY DARK THEME TEMPLATE
+# PLOTLY DARK THEME HELPER
 # ============================================
-PLOTLY_DARK_TEMPLATE = {
-    "layout": {
-        "paper_bgcolor": "rgba(13, 17, 23, 0)",
-        "plot_bgcolor": "rgba(22, 27, 34, 0.5)",
-        "font": {"color": "#e6edf3", "family": "Inter, sans-serif"},
-        "title": {"font": {"color": "#e6edf3"}},
-        "xaxis": {
-            "gridcolor": "rgba(48, 54, 61, 0.5)",
-            "linecolor": "#30363d",
-            "tickfont": {"color": "#8b949e"},
-            "title": {"font": {"color": "#8b949e"}},
-        },
-        "yaxis": {
-            "gridcolor": "rgba(48, 54, 61, 0.5)",
-            "linecolor": "#30363d",
-            "tickfont": {"color": "#8b949e"},
-            "title": {"font": {"color": "#8b949e"}},
-        },
-        "legend": {
-            "bgcolor": "rgba(22, 27, 34, 0.8)",
-            "bordercolor": "#30363d",
-            "font": {"color": "#e6edf3"},
-        },
-        "hoverlabel": {
-            "bgcolor": "#21262d",
-            "bordercolor": "#30363d",
-            "font": {"color": "#e6edf3", "family": "Roboto Mono, monospace"},
-        },
-    }
-}
+def apply_dark_theme(fig, **kwargs):
+    """Apply dark theme to a Plotly figure with optional overrides."""
+    # Base dark theme settings
+    fig.update_layout(
+        paper_bgcolor="rgba(13, 17, 23, 0)",
+        plot_bgcolor="rgba(22, 27, 34, 0.5)",
+        font=dict(color="#e6edf3", family="Inter, sans-serif"),
+        hoverlabel=dict(
+            bgcolor="#21262d",
+            bordercolor="#30363d",
+            font=dict(color="#e6edf3", family="Roboto Mono, monospace"),
+        ),
+        **kwargs
+    )
+
+    # Update axes
+    fig.update_xaxes(
+        gridcolor="rgba(48, 54, 61, 0.5)",
+        linecolor="#30363d",
+        tickfont=dict(color="#8b949e"),
+        title_font=dict(color="#8b949e"),
+    )
+
+    fig.update_yaxes(
+        gridcolor="rgba(48, 54, 61, 0.5)",
+        linecolor="#30363d",
+        tickfont=dict(color="#8b949e"),
+        title_font=dict(color="#8b949e"),
+    )
+
+    return fig
 
 # Updated sector colors for dark theme
 DARK_SECTOR_COLORS = {
@@ -913,8 +914,8 @@ def main():
                     pass
 
         # Apply dark theme layout
-        fig.update_layout(
-            **PLOTLY_DARK_TEMPLATE["layout"],
+        apply_dark_theme(
+            fig,
             xaxis_title="Duration / 久期 (Years)",
             yaxis_title="YTM / 到期收益率 (%)",
             hovermode="closest",
@@ -928,7 +929,7 @@ def main():
                 x=0.5,
                 bgcolor="rgba(22, 27, 34, 0.8)",
                 bordercolor="#30363d",
-                font=dict(size=10),
+                font=dict(size=10, color="#e6edf3"),
             ),
         )
 
@@ -1080,8 +1081,8 @@ def main():
             annotation_font_color="#f85149",
         )
 
-        fig_carry.update_layout(
-            **PLOTLY_DARK_TEMPLATE["layout"],
+        apply_dark_theme(
+            fig_carry,
             xaxis_title="Carry Efficiency / 息差效率 (%/yr)",
             yaxis_title="Count / 数量",
             barmode="overlay",
@@ -1093,6 +1094,9 @@ def main():
                 y=-0.2,
                 xanchor="center",
                 x=0.5,
+                bgcolor="rgba(22, 27, 34, 0.8)",
+                bordercolor="#30363d",
+                font=dict(color="#e6edf3"),
             ),
         )
 
@@ -1137,8 +1141,8 @@ def main():
                 hovertemplate="<b>%{label}</b><br>%{value:$,.0f}<br>%{percent}<extra></extra>",
             )])
 
-            fig_sector.update_layout(
-                **PLOTLY_DARK_TEMPLATE["layout"],
+            apply_dark_theme(
+                fig_sector,
                 height=300,
                 margin=dict(l=20, r=20, t=20, b=20),
                 showlegend=False,
