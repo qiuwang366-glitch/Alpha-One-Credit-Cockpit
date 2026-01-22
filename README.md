@@ -6,10 +6,12 @@ A Python-based Fixed Income Portfolio Analysis System built with Streamlit for q
 
 Alpha-One Credit Cockpit is designed for Portfolio Managers managing large Fixed Income portfolios ($50B+). The system digitizes the investment workflow by providing:
 
-- **Rich/Cheap Bond Identification**: Stratified regression analysis to identify bonds trading expensive or cheap relative to their sector curves
+- **Rich/Cheap Bond Identification**: Stratified regression analysis with both Quadratic and Nelson-Siegel curve models
+- **Single Security Drill-Down**: Interactive ticker inspector with issuer curve visualization
 - **Net Carry Efficiency Monitoring**: Track yield vs. funding cost (FTP) to identify "bleeding" assets
 - **Valuation Lag Risk Detection**: Highlight positions with potential valuation concerns
 - **Accounting-Aware Analysis**: Proper handling of HTM vs. AFS classifications
+- **Mobile-First Design**: Responsive dark theme optimized for all devices
 
 ## Architecture
 
@@ -45,8 +47,10 @@ AI-driven qualitative analysis module. Currently provides:
 ### Module B: Portfolio Optimizer (Current MVP)
 
 Quantitative scanning of current holdings with:
-- Stratified regression for Rich/Cheap identification
+- Dual-model curve fitting (Quadratic & Nelson-Siegel)
+- Rich/Cheap identification via Z-scores
 - Net Carry efficiency analysis
+- Single security inspector with issuer grouping
 - Sector-specific yield curve fitting
 - Accounting classification handling (HTM/AFS)
 
@@ -94,8 +98,8 @@ print(report.to_dict())
 ```python
 from src.module_b.analytics import PortfolioAnalyzer
 
-# Initialize with cleaned data
-analyzer = PortfolioAnalyzer(df)
+# Initialize with cleaned data and select model
+analyzer = PortfolioAnalyzer(df, model_type="nelson_siegel")  # or "quadratic"
 
 # Fit sector curves
 regression_results = analyzer.fit_sector_curves()
@@ -138,13 +142,43 @@ The system accepts CSV files with bilingual (Chinese/English) columns:
 
 ## Quantitative Methodology
 
-### Stratified Regression
+### Dual Curve Models
 
-For each sector, the system fits a quadratic yield-duration curve:
+The system supports two yield curve models:
+
+#### 1. Quadratic Model (Polynomial Regression)
+
+For each sector, fits a quadratic yield-duration curve:
 
 $$Yield = a \cdot Duration^2 + b \cdot Duration + c$$
 
+**Advantages:**
+- Simple and interpretable
+- Fast computation
+- Good for standard yield curves
+
+#### 2. Nelson-Siegel Model (Advanced Parametric)
+
+Implements the Nelson-Siegel parametric model:
+
+$$Yield(\tau) = \beta_0 + \beta_1 \cdot \frac{1-e^{-\tau/\lambda}}{\tau/\lambda} + \beta_2 \cdot \left(\frac{1-e^{-\tau/\lambda}}{\tau/\lambda} - e^{-\tau/\lambda}\right)$$
+
+**Parameters:**
+- **β₀ (Long-Term Level)**: Asymptotic yield as duration → ∞
+- **β₁ (Short-Term Component)**: Slope at the origin (short-term factor)
+- **β₂ (Curvature)**: Medium-term curvature component
+- **λ (Decay Parameter)**: Controls where the curvature peaks
+
+**Advantages:**
+- Theoretically grounded in term structure models
+- Better captures non-linear curve shapes
+- Separate interpretation of short, medium, and long-term factors
+- More robust for irregular yield curves
+
+### Stratified Regression & Z-Scores
+
 **Key Metrics:**
+- **Model Yield**: Predicted yield from fitted curve
 - **Residual**: Actual Yield - Model Yield
 - **Z-Score**: Residual / Standard Deviation of Residuals
 
@@ -161,21 +195,38 @@ $$Yield = a \cdot Duration^2 + b \cdot Duration + c$$
 
 ## Dashboard Features
 
-### Tab 1: The Matrix
+### Tab 1: The Matrix (Relative Value)
 - Interactive scatter plot of Duration vs. Yield
-- Sector-specific regression curves overlay
-- Hover tooltips with bond details
+- Sector-specific regression curves overlay (Quadratic or Nelson-Siegel)
+- Model parameter display panel
+- Selected ticker highlighting with gold star marker
+- **🔍 Single Security Analysis**:
+  - Dropdown selector for any bond ticker
+  - Current metrics display (YTM, OAS, Z-Score)
+  - Scenario analysis table (Actual vs Fair Yield)
+  - Automated trading recommendations
+  - Issuer curve visualization showing all bonds from same issuer
+- Hover tooltips with bilingual bond details
 
 ### Tab 2: Optimization Lab
 - Sell Candidates table (Z-Score < -1.5)
 - Bleeding Assets table (Net Carry < 0)
 - Carry efficiency distribution
+- Position exposure summaries
 
 ### Tab 3: Management Brief
 - One-click executive summary generation
 - Portfolio metrics overview
 - Sector allocation visualization
-- Data export functionality
+- Data export functionality (Full Portfolio, Sell List, Regression Stats)
+
+### Features
+- **📱 Mobile-First Design**: Responsive layout optimized for all screen sizes
+- **🌓 Dark Theme**: Professional Bloomberg/Aladdin-style institutional UI
+- **🌐 Bilingual Interface**: All labels in English/Chinese (英文/中文)
+- **🔬 Model Selection**: Toggle between Quadratic and Nelson-Siegel models
+- **⭐ Ticker Highlighting**: Selected bonds shown as gold stars on main chart
+- **🏢 Issuer Grouping**: Automatic detection and visualization of bonds from same issuer
 
 ## Future Development
 
@@ -216,3 +267,125 @@ MIT License
 ## Contact
 
 For questions or support, please open an issue in the repository.
+
+---
+
+## Development Changelog
+
+### 2026-01-22 (Phase 2: Advanced Modeling & Interactivity)
+
+**Nelson-Siegel Model Implementation**
+- Added Nelson-Siegel parametric yield curve model as an alternative to quadratic regression
+- Implemented `nelson_siegel()` function with β₀, β₁, β₂, λ parameters
+- Added `NelsonSiegelResult` dataclass for storing fitted parameters
+- Used `scipy.optimize.curve_fit` for parameter calibration with proper bounds
+- Model selection toggle in UI (Quadratic vs Nelson-Siegel)
+- Display model-specific parameters in statistics panel
+
+**Single Security Analysis**
+- Interactive ticker dropdown selector (alphabetically sorted)
+- Selected ticker highlighted as gold star ⭐ on main scatter plot
+- Current metrics cards: YTM, OAS, Z-Score with color coding
+- Scenario analysis table: Actual Yield, Fair Yield, Residual, Z-Score
+- Automated interpretation: Rich/Cheap/Fair with buy/sell/hold recommendations
+- Smart issuer detection and grouping
+
+**Issuer Curve Visualization**
+- Automatic detection of bonds from same issuer
+- Mini-chart showing issuer-specific yield curve
+- Sector curve overlay for reference
+- Gold star highlighting for selected bond
+- Shows count of sibling bonds found
+
+**Technical Improvements**
+- Added `importlib.reload()` to force latest module versions and prevent cache issues
+- Created comprehensive `.gitignore` for Python cache files
+- Robust error handling for curve fitting with small datasets
+- All Z-score calculations unified for both model types
+- Maintained backward compatibility with quadratic model
+
+**Commits:**
+- `34304da` - Fix module reload issue: Add importlib.reload() to force latest module versions
+- `8e65ffd` - Add .gitignore to exclude Python cache files and temporary artifacts
+- `c6c0783` - Implement Nelson-Siegel model and single security drill-down analysis
+
+### 2026-01-22 (Phase 1.5: UI/UX Enhancement)
+
+**Mobile-First Redesign**
+- Complete UI overhaul with Bloomberg/Aladdin-style dark theme
+- Responsive design optimized for mobile devices
+- Custom CSS with glassmorphism effects and smooth animations
+- Collapsible filters with mobile-friendly touch targets
+
+**Bilingual Interface**
+- Full Chinese/English dual language support
+- All labels, tooltips, and help text in both languages
+- Chinese sector name translations
+- Bilingual metric cards and data tables
+
+**Visual Improvements**
+- Professional color palette (dark blues, purples, greens)
+- Smooth gradient backgrounds
+- Custom scrollbars matching theme
+- Hover effects and transitions
+- Metric cards with accent borders
+- Bond cards for mobile view
+
+**Bug Fixes**
+- Fixed Plotly layout TypeError by replacing dict unpacking with helper function
+- Improved error handling for missing data
+
+**Commits:**
+- `c45e8f1` - Fix Plotly layout TypeError by replacing dict unpacking with helper function
+- `605b114` - Upgrade to institutional-grade mobile-first bilingual dashboard
+
+### 2026-01-21 (Phase 1: MVP Launch)
+
+**Core System Implementation**
+- Complete architecture setup with modular structure
+- Data loader with bilingual CSV parsing
+- Quadratic regression for yield curve fitting
+- Z-score based Rich/Cheap identification
+- Net Carry efficiency analysis
+
+**Analytics Engine**
+- `PortfolioAnalyzer` class with stratified regression
+- Automatic sector curve fitting
+- Sell candidates identification (Z < -1.5)
+- Bleeding assets detection (Net Carry < 0)
+- Portfolio metrics aggregation
+- Executive summary generation
+
+**Dashboard Features**
+- Three-tab interface: Matrix / Optimization Lab / Management Brief
+- Interactive Duration-Yield scatter plots
+- Sector-specific regression curves overlay
+- Carry distribution histogram
+- Sector allocation pie chart
+- CSV data export functionality
+
+**Data Processing**
+- Robust CSV parsing with column mapping
+- Data validation and quality reporting
+- Derived metrics calculation (Net Carry, Carry Efficiency)
+- Liquidity proxy scoring
+- Accounting classification handling
+
+**Technical Foundation**
+- Abstract base classes for future LLM integration (Module A)
+- Unit tests framework
+- Type hints and documentation
+- Constants management
+- Error handling and logging
+
+**Commits:**
+- `92fe061` - Implement Alpha-One Credit Cockpit fixed income portfolio system
+- `bac31be` - Merge pull request #1
+- `dff66b9` - Initial repository setup
+
+---
+
+**Total Development Time**: 2 days
+**Current Version**: 2.0 (Phase 2)
+**Lines of Code**: ~3,500
+**Test Coverage**: In Progress
