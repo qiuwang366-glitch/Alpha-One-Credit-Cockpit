@@ -1,95 +1,334 @@
-分类1,分类2,TICKER,债券名称,AccSection,Nominal（USD）,Duration,EffectiveYield,OAS,FTP Rate
-MBS,Agency,FNMA 30Y 4.5,Fannie Mae 30Y 4.5% Pool,AFS,"25,000,000",5.2,4.85%,45,4.20%
-MBS,Agency,FNMA 30Y 5.0,Fannie Mae 30Y 5.0% Pool,AFS,"18,500,000",4.8,5.15%,52,4.20%
-MBS,Agency,GNMA 30Y 4.0,Ginnie Mae 30Y 4.0% Pool,HTM,"32,000,000",5.8,4.55%,38,4.20%
-MBS,Agency,GNMA 30Y 5.5,Ginnie Mae 30Y 5.5% Pool,AFS,"15,000,000",4.2,5.65%,58,4.20%
-MBS,Agency,FHLMC 15Y 3.5,Freddie Mac 15Y 3.5% Pool,AFS,"12,000,000",3.1,3.95%,28,3.80%
-MBS,Non-Agency,JPMMT 2024-1,JP Morgan Mortgage Trust 2024-1 A1,Fair Value,"8,500,000",2.8,5.85%,125,4.50%
-MBS,Non-Agency,CSFB 2023-RP1,Credit Suisse First Boston RP Trust A,AFS,"6,200,000",3.5,6.25%,145,4.50%
-Corps,Technology,AAPL 4.65 26,Apple Inc 4.65% 2026,AFS,"45,000,000",1.8,4.82%,55,4.25%
-Corps,Technology,MSFT 3.50 28,Microsoft Corp 3.50% 2028,AFS,"38,000,000",3.2,4.15%,48,4.10%
-Corps,Technology,GOOG 3.375 29,Alphabet Inc 3.375% 2029,HTM,"28,000,000",4.1,4.35%,62,4.15%
-Corps,Technology,NVDA 2.85 30,NVIDIA Corp 2.85% 2030,AFS,"22,000,000",5.0,4.55%,78,4.20%
-Corps,Healthcare,JNJ 3.40 27,Johnson & Johnson 3.40% 2027,AFS,"35,000,000",2.5,4.05%,42,4.00%
-Corps,Healthcare,PFE 4.10 29,Pfizer Inc 4.10% 2029,AFS,"28,500,000",3.8,4.85%,68,4.15%
-Corps,Healthcare,UNH 3.75 28,UnitedHealth Group 3.75% 2028,HTM,"42,000,000",3.1,4.55%,52,4.10%
-Corps,Consumer,WMT 3.25 27,Walmart Inc 3.25% 2027,AFS,"30,000,000",2.3,4.12%,38,4.05%
-Corps,Consumer,PG 2.80 29,Procter & Gamble 2.80% 2029,AFS,"25,000,000",3.9,3.95%,32,4.00%
-Corps,Consumer,KO 3.45 28,Coca-Cola Co 3.45% 2028,AFS,"18,000,000",3.0,4.28%,45,4.08%
-Corps,Energy,XOM 3.482 30,Exxon Mobil 3.482% 2030,AFS,"40,000,000",4.5,4.65%,72,4.18%
-Corps,Energy,CVX 2.895 29,Chevron Corp 2.895% 2029,HTM,"35,000,000",3.8,4.25%,55,4.12%
-Corps,Energy,COP 4.15 28,ConocoPhillips 4.15% 2028,AFS,"22,000,000",2.9,5.05%,88,4.25%
-Corps,Industrial,CAT 3.90 27,Caterpillar Inc 3.90% 2027,AFS,"18,500,000",2.4,4.45%,52,4.15%
-Corps,Industrial,BA 4.875 29,Boeing Co 4.875% 2029,AFS,"15,000,000",3.5,5.85%,145,4.35%
-Corps,Industrial,HON 4.25 28,Honeywell International 4.25% 2028,AFS,"20,000,000",2.8,4.68%,58,4.18%
-Fins,Banks-US,JPM 4.50 27,JPMorgan Chase 4.50% 2027,AFS,"55,000,000",2.2,4.95%,62,4.28%
-Fins,Banks-US,BAC 3.875 29,Bank of America 3.875% 2029,AFS,"48,000,000",3.6,4.75%,58,4.22%
-Fins,Banks-US,WFC 4.30 28,Wells Fargo 4.30% 2028,HTM,"42,000,000",2.8,5.15%,78,4.30%
-Fins,Banks-US,C 4.65 30,Citigroup Inc 4.65% 2030,AFS,"38,000,000",4.2,5.35%,95,4.35%
-Fins,Banks-Foreign,HSBC 4.25 29,HSBC Holdings 4.25% 2029,AFS,"28,000,000",3.4,5.05%,85,4.28%
-Fins,Banks-Foreign,BCS 4.375 28,Barclays PLC 4.375% 2028,AFS,"22,000,000",2.9,5.25%,92,4.32%
-Fins,Banks-Foreign,DB 4.50 30,Deutsche Bank 4.50% 2030,Fair Value,"18,000,000",4.1,5.85%,145,4.45%
-Fins,Insurance,MET 4.05 28,MetLife Inc 4.05% 2028,AFS,"25,000,000",2.7,4.65%,55,4.18%
-Fins,Insurance,PRU 4.35 29,Prudential Financial 4.35% 2029,AFS,"20,000,000",3.3,4.95%,68,4.22%
-Fins,REITs,SPG 3.85 27,Simon Property Group 3.85% 2027,AFS,"15,000,000",2.1,5.25%,95,4.45%
-Fins,REITs,PLD 3.25 29,Prologis LP 3.25% 2029,AFS,"12,000,000",3.5,4.85%,72,4.28%
-Rates,Treasury,T 4.25 26,US Treasury 4.25% 2026,HTM,"120,000,000",1.5,4.28%,0,4.30%
-Rates,Treasury,T 4.00 28,US Treasury 4.00% 2028,HTM,"95,000,000",3.2,4.15%,0,4.20%
-Rates,Treasury,T 3.875 30,US Treasury 3.875% 2030,AFS,"85,000,000",4.8,4.05%,0,4.15%
-Rates,Treasury,T 4.50 34,US Treasury 4.50% 2034,AFS,"65,000,000",7.2,4.52%,0,4.25%
-Rates,TIPS,TIPS 1.75 28,Treasury Inflation Protected 1.75% 2028,HTM,"45,000,000",2.8,1.85%,-15,1.95%
-Rates,Agency,FHLB 4.125 27,Federal Home Loan Bank 4.125% 2027,AFS,"35,000,000",2.3,4.35%,8,4.22%
-EM,Sovereign,BRAZIL 5.625 28,Brazil Republic 5.625% 2028,AFS,"18,000,000",2.8,6.25%,185,4.85%
-EM,Sovereign,MEXICO 4.50 29,Mexico United States 4.50% 2029,AFS,"22,000,000",3.5,5.85%,145,4.65%
-EM,Sovereign,INDON 4.75 30,Indonesia Republic 4.75% 2030,AFS,"15,000,000",4.2,5.65%,125,4.55%
-EM,Corporate,PEMEX 6.50 29,Petroleos Mexicanos 6.50% 2029,Fair Value,"12,000,000",3.1,8.25%,385,5.25%
-EM,Corporate,PETBRA 5.75 28,Petrobras Global 5.75% 2028,AFS,"10,000,000",2.6,6.85%,245,4.95%
-EM,Corporate,TENCNT 3.975 29,Tencent Holdings 3.975% 2029,AFS,"25,000,000",3.8,4.55%,62,4.18%
-ABS,Auto,ALLY 4.85 27,Ally Auto Receivables 4.85% 2027 A,AFS,"8,000,000",1.2,5.05%,45,4.55%
-ABS,Auto,CARMX 5.15 28,CarMax Auto Owner Trust 5.15% 2028 A,AFS,"6,500,000",1.8,5.35%,55,4.62%
-ABS,Credit Card,DCENT 4.75 27,Discover Card Trust 4.75% 2027 A,AFS,"10,000,000",1.4,4.95%,38,4.48%
-ABS,Student Loan,SLMA 4.25 29,SLM Student Loan Trust 4.25% 2029,AFS,"5,500,000",2.5,5.15%,68,4.55%
-CMBS,Office,JPMCC 2024-1,JP Morgan Commercial Mortgage A2,Fair Value,"12,000,000",3.2,5.95%,155,4.75%
-CMBS,Retail,WFCM 2023-C55,Wells Fargo Commercial Mortgage A3,AFS,"8,500,000",2.8,5.45%,115,4.58%
-CMBS,Industrial,BBCMS 2024-1,Barclays Commercial Mortgage A2,AFS,"10,000,000",3.5,5.25%,95,4.52%
-CLO,Senior,CIFC 2024-1,CIFC Funding 2024-1 A1,AFS,"15,000,000",2.2,6.15%,125,5.15%
-CLO,Senior,BXCLO 2024-1,Blackstone CLO 2024-1 A,AFS,"12,000,000",2.0,6.05%,118,5.10%
-CLO,Mezzanine,CARLYLE 2024-1,Carlyle US CLO 2024-1 B,Fair Value,"8,000,000",2.8,7.25%,235,5.45%
-Munis,GO,NYC 4.00 28,New York City GO 4.00% 2028,AFS,"20,000,000",2.9,3.15%,-25,2.85%
-Munis,GO,CA 3.75 29,California State GO 3.75% 2029,AFS,"18,000,000",3.5,3.05%,-32,2.80%
-Munis,Revenue,METRO 4.25 30,LA Metro Transit Revenue 4.25% 2030,AFS,"15,000,000",4.2,3.45%,-18,3.05%
-Munis,Revenue,NYCTRAN 3.50 28,NYC Transitional Finance 3.50% 2028,HTM,"12,000,000",2.6,2.95%,-28,2.75%
-Corps,SOE,SINOPEC 4.25 28,Sinopec Group 4.25% 2028,AFS,"20,000,000",2.9,4.95%,78,4.35%
-Corps,SOE,CNOOC 3.75 29,CNOOC Ltd 3.75% 2029,AFS,"15,000,000",3.6,4.65%,58,4.22%
-Corps,SOE,SGCC 3.50 27,State Grid Corp China 3.50% 2027,AFS,"18,000,000",2.2,4.25%,42,4.08%
-Fins,Banks-Foreign,ICBC 3.875 28,Industrial Commercial Bank China 3.875% 2028,AFS,"22,000,000",2.8,4.55%,48,4.15%
-Fins,Banks-Foreign,BOC 4.00 29,Bank of China Ltd 4.00% 2029,AFS,"18,000,000",3.4,4.75%,55,4.20%
-Corps,Technology,BABA 4.00 29,Alibaba Group 4.00% 2029,AFS,"16,000,000",3.5,5.15%,95,4.35%
-Corps,Technology,BIDU 3.875 28,Baidu Inc 3.875% 2028,Fair Value,"8,000,000",2.8,5.45%,118,4.42%
-MBS,Agency,FNMA ARM,Fannie Mae ARM Pool 2024,AFS,"10,000,000",0.8,5.25%,35,5.35%
-MBS,Agency,GNMA 20Y 3.5,Ginnie Mae 20Y 3.5% Pool,AFS,"14,000,000",4.5,4.25%,32,4.15%
-Corps,Telecom,T 4.35 29,AT&T Inc 4.35% 2029,AFS,"28,000,000",3.4,5.15%,85,4.28%
-Corps,Telecom,VZ 4.125 28,Verizon Communications 4.125% 2028,AFS,"25,000,000",2.8,4.85%,62,4.22%
-Corps,Utilities,NEE 4.25 29,NextEra Energy 4.25% 2029,AFS,"22,000,000",3.5,4.65%,48,4.18%
-Corps,Utilities,DUK 3.95 28,Duke Energy 3.95% 2028,HTM,"18,000,000",2.9,4.45%,42,4.12%
-Corps,Utilities,SO 4.40 30,Southern Company 4.40% 2030,AFS,"15,000,000",4.3,4.85%,58,4.22%
-Rates,Agency,FFCB 3.875 27,Federal Farm Credit Bank 3.875% 2027,AFS,"28,000,000",2.1,4.18%,5,4.18%
-Rates,Agency,TVA 4.25 29,Tennessee Valley Authority 4.25% 2029,AFS,"20,000,000",3.4,4.45%,12,4.25%
-EM,Sovereign,CHILE 3.50 29,Chile Republic 3.50% 2029,AFS,"12,000,000",3.8,4.85%,75,4.35%
-EM,Sovereign,POLAND 4.00 28,Poland Republic 4.00% 2028,AFS,"15,000,000",2.9,4.55%,45,4.18%
-EM,Corporate,VALE 4.375 29,Vale SA 4.375% 2029,AFS,"10,000,000",3.2,5.45%,125,4.55%
-Corps,Consumer,MCD 3.625 28,McDonald's Corp 3.625% 2028,AFS,"16,000,000",2.7,4.35%,48,4.12%
-Corps,Consumer,NKE 3.375 29,Nike Inc 3.375% 2029,AFS,"12,000,000",3.6,4.15%,35,4.05%
-Corps,Consumer,SBUX 3.80 28,Starbucks Corp 3.80% 2028,AFS,"10,000,000",2.9,4.55%,52,4.15%
-Fins,Asset Mgmt,BLK 3.75 28,BlackRock Inc 3.75% 2028,AFS,"18,000,000",2.8,4.45%,42,4.12%
-Fins,Asset Mgmt,BX 4.00 29,Blackstone Inc 4.00% 2029,AFS,"14,000,000",3.3,4.85%,62,4.22%
-Corps,Industrial,GE 4.25 28,General Electric 4.25% 2028,AFS,"20,000,000",2.6,4.95%,72,4.28%
-Corps,Industrial,MMM 3.625 29,3M Company 3.625% 2029,AFS,"12,000,000",3.5,4.65%,55,4.18%
-Corps,Industrial,UPS 3.90 28,United Parcel Service 3.90% 2028,AFS,"15,000,000",2.8,4.45%,45,4.12%
-ABS,Equipment,CNHI 4.65 27,CNH Equipment Trust 4.65% 2027 A,AFS,"5,000,000",1.5,4.95%,42,4.52%
-ABS,Equipment,DE 4.45 28,John Deere Owner Trust 4.45% 2028 A,AFS,"7,000,000",1.9,4.75%,35,4.45%
-CMBS,Multifamily,FHMS K-Series,Freddie Mac Multifamily K Series A2,AFS,"18,000,000",3.8,4.85%,55,4.35%
-CLO,Senior,APIDOS 2024-1,Apidos CLO 2024-1 A,AFS,"10,000,000",2.1,5.95%,112,5.05%
-Sovs,Supranational,IBRD 3.50 28,World Bank 3.50% 2028,AFS,"30,000,000",2.9,3.85%,-5,3.95%
-Sovs,Supranational,EIB 3.375 29,European Investment Bank 3.375% 2029,AFS,"25,000,000",3.5,3.75%,-8,3.88%
-Sovs,Supranational,IADB 3.625 27,Inter-American Dev Bank 3.625% 2027,AFS,"20,000,000",2.2,3.95%,-2,4.00%
+﻿分类1,分类2,TICKER,债券名称,AccSection,Nominal（USD）,Duration,EffectiveYield,OAS,FTP Rate
+ABS,Auto,ALLY 4.81 29,Ally Auto Receivables Trust 4.81% 2029,AFS,"12,862,191",4.07,5.11%,91,4.30%
+ABS,Auto,ALLY 4.82 34,Ally Auto Receivables Trust 4.82% 2034,AFS,"5,234,132",7.74,5.31%,64,4.30%
+ABS,Auto,ALLY 5.00 39,Ally Auto Receivables Trust 5.00% 2039,AFS,"20,023,561",10.92,5.77%,73,4.30%
+ABS,Auto,ALLY 5.72 44,Ally Auto Receivables Trust 5.72% 2044,AFS,"7,460,066",13.46,6.22%,70,4.30%
+ABS,Auto,ALLY 5.82 39,Ally Auto Receivables Trust 5.82% 2039,HTM,"17,251,469",10.03,5.85%,82,4.30%
+ABS,Auto,ALLY 6.07 44,Ally Auto Receivables Trust 6.07% 2044,AFS,"18,573,399",13.06,6.27%,77,4.30%
+ABS,Auto,FORD 4.41 31,Ford Credit Auto Trust 4.41% 2031,AFS,"21,812,334",5.87,5.02%,78,4.35%
+ABS,Auto,FORD 4.56 31,Ford Credit Auto Trust 4.56% 2031,AFS,"25,269,502",6.08,5.11%,71,4.35%
+ABS,Auto,FORD 4.94 31,Ford Credit Auto Trust 4.94% 2031,AFS,"30,064,642",6.32,5.19%,82,4.35%
+ABS,Auto,FORD 5.08 29,Ford Credit Auto Trust 5.08% 2029,Fair Value,"30,594,760",4.86,5.01%,69,4.35%
+ABS,Auto,FORD 5.25 39,Ford Credit Auto Trust 5.25% 2039,AFS,"6,741,855",10.73,6.01%,83,4.35%
+ABS,Auto,FORD 5.46 34,Ford Credit Auto Trust 5.46% 2034,AFS,"13,436,564",7.76,5.29%,78,4.35%
+ABS,Auto,FORD 5.64 31,Ford Credit Auto Trust 5.64% 2031,HTM,"22,338,665",6.15,5.38%,96,4.35%
+ABS,Auto,FORD 6.36 44,Ford Credit Auto Trust 6.36% 2044,AFS,"19,871,878",13.96,6.51%,86,4.35%
+Corps,Technology,AAPL 3.91 26,Apple Inc 3.91% 2026,HTM,"48,726,699",1.76,4.30%,55,4.25%
+Corps,Technology,AAPL 4.30 31,Apple Inc 4.30% 2031,Fair Value,"25,375,181",6.50,4.90%,41,4.25%
+Corps,Technology,AAPL 4.55 31,Apple Inc 4.55% 2031,AFS,"24,457,004",6.14,4.82%,42,4.25%
+Corps,Technology,AAPL 4.95 34,Apple Inc 4.95% 2034,HTM,"18,940,315",8.54,5.37%,54,4.25%
+Corps,Technology,AAPL 5.00 29,Apple Inc 5.00% 2029,HTM,"27,549,172",4.60,4.86%,56,4.25%
+Corps,Technology,AAPL 5.48 34,Apple Inc 5.48% 2034,AFS,"8,389,855",8.27,5.28%,46,4.25%
+Corps,Technology,AAPL 6.07 54,Apple Inc 6.07% 2054,Fair Value,"22,341,446",15.17,6.38%,55,4.25%
+Corps,Technology,AAPL 6.26 54,Apple Inc 6.26% 2054,Fair Value,"23,809,172",14.10,6.06%,39,4.25%
+Corps,Healthcare,ABBV 4.50 27,AbbVie Inc 4.50% 2027,HTM,"38,852,595",2.74,4.65%,66,4.20%
+Corps,Healthcare,ABBV 4.94 39,AbbVie Inc 4.94% 2039,AFS,"14,622,802",10.72,5.74%,61,4.20%
+Corps,Healthcare,ABBV 5.09 31,AbbVie Inc 5.09% 2031,HTM,"33,238,229",6.27,4.88%,54,4.20%
+Corps,Healthcare,ABBV 5.20 31,AbbVie Inc 5.20% 2031,AFS,"16,447,571",6.77,5.29%,74,4.20%
+Corps,Healthcare,ABBV 5.75 44,AbbVie Inc 5.75% 2044,AFS,"9,848,195",12.97,5.92%,75,4.20%
+Corps,Healthcare,ABBV 6.43 54,AbbVie Inc 6.43% 2054,HTM,"10,599,582",17.72,7.24%,92,4.20%
+Corps,Technology,AMZN 4.28 26,Amazon.com Inc 4.28% 2026,HTM,"17,922,525",2.19,4.45%,48,4.18%
+Corps,Technology,AMZN 4.51 26,Amazon.com Inc 4.51% 2026,AFS,"48,712,789",1.70,4.32%,52,4.18%
+Corps,Technology,AMZN 4.76 31,Amazon.com Inc 4.76% 2031,Fair Value,"24,584,219",5.92,5.14%,68,4.18%
+Corps,Technology,AMZN 4.96 39,Amazon.com Inc 4.96% 2039,AFS,"14,373,213",11.06,5.68%,52,4.18%
+Corps,Technology,AMZN 5.74 44,Amazon.com Inc 5.74% 2044,AFS,"24,859,296",12.13,5.97%,56,4.18%
+Corps,Technology,AMZN 6.39 44,Amazon.com Inc 6.39% 2044,AFS,"18,914,974",14.91,6.55%,78,4.18%
+Corps,Industrial,BA 5.38 31,Boeing Co 5.38% 2031,AFS,"22,058,910",6.55,5.85%,137,4.35%
+Corps,Industrial,BA 5.43 29,Boeing Co 5.43% 2029,AFS,"29,585,568",5.12,5.74%,141,4.35%
+Corps,Industrial,BA 5.52 26,Boeing Co 5.52% 2026,HTM,"16,441,422",1.73,5.31%,149,4.35%
+Corps,Industrial,BA 5.99 39,Boeing Co 5.99% 2039,AFS,"20,676,651",11.65,6.98%,162,4.35%
+Corps,Industrial,BA 6.27 39,Boeing Co 6.27% 2039,HTM,"6,650,171",11.94,6.80%,150,4.35%
+Corps,Industrial,BA 6.54 54,Boeing Co 6.54% 2054,AFS,"17,332,092",14.50,7.18%,142,4.35%
+Corps,Industrial,CAT 3.84 26,Caterpillar Inc 3.84% 2026,AFS,"42,878,805",1.94,4.40%,54,4.15%
+Corps,Industrial,CAT 3.90 27,Caterpillar Inc 3.90% 2027,AFS,"22,018,365",2.59,4.52%,45,4.15%
+Corps,Industrial,CAT 4.26 31,Caterpillar Inc 4.26% 2031,AFS,"17,759,049",6.38,5.00%,60,4.15%
+Corps,Industrial,CAT 4.74 29,Caterpillar Inc 4.74% 2029,HTM,"29,273,046",4.22,4.73%,55,4.15%
+Corps,Industrial,CAT 4.88 29,Caterpillar Inc 4.88% 2029,AFS,"31,608,956",4.28,4.68%,39,4.15%
+Corps,Industrial,CAT 5.20 39,Caterpillar Inc 5.20% 2039,AFS,"17,000,411",10.18,5.26%,47,4.15%
+Corps,Energy,COP 3.88 26,ConocoPhillips 3.88% 2026,Fair Value,"23,354,151",1.61,4.45%,80,4.25%
+Corps,Energy,COP 4.00 26,ConocoPhillips 4.00% 2026,Fair Value,"33,641,088",1.70,4.59%,83,4.25%
+Corps,Energy,COP 4.76 29,ConocoPhillips 4.76% 2029,AFS,"12,102,456",4.91,4.95%,77,4.25%
+Corps,Energy,COP 4.77 29,ConocoPhillips 4.77% 2029,AFS,"32,717,533",4.01,4.96%,80,4.25%
+Corps,Energy,COP 5.84 34,ConocoPhillips 5.84% 2034,AFS,"24,226,306",8.90,5.69%,87,4.25%
+Corps,Energy,COP 6.19 54,ConocoPhillips 6.19% 2054,HTM,"15,425,206",16.18,6.88%,89,4.25%
+Corps,Energy,COP 6.54 44,ConocoPhillips 6.54% 2044,AFS,"23,130,274",14.68,6.66%,85,4.25%
+Corps,Energy,CVX 3.84 27,Chevron Corp 3.84% 2027,HTM,"28,955,962",3.12,4.36%,51,4.12%
+Corps,Energy,CVX 4.22 27,Chevron Corp 4.22% 2027,AFS,"32,944,098",2.93,4.77%,67,4.12%
+Corps,Energy,CVX 5.16 31,Chevron Corp 5.16% 2031,AFS,"18,753,131",6.02,4.95%,61,4.12%
+Corps,Energy,CVX 5.42 39,Chevron Corp 5.42% 2039,Fair Value,"22,582,366",11.97,5.75%,53,4.12%
+Corps,Energy,CVX 5.44 34,Chevron Corp 5.44% 2034,HTM,"7,590,298",7.68,5.22%,51,4.12%
+Corps,Energy,CVX 5.52 39,Chevron Corp 5.52% 2039,AFS,"15,739,488",12.04,5.72%,48,4.12%
+Corps,Energy,CVX 6.10 54,Chevron Corp 6.10% 2054,AFS,"18,592,946",14.17,5.86%,36,4.12%
+Corps,Industrial,GE 4.20 27,General Electric Co 4.20% 2027,AFS,"48,943,737",2.73,4.68%,73,4.25%
+Corps,Industrial,GE 4.22 26,General Electric Co 4.22% 2026,AFS,"30,585,684",1.84,4.57%,83,4.25%
+Corps,Industrial,GE 4.65 31,General Electric Co 4.65% 2031,AFS,"14,176,048",6.05,5.42%,93,4.25%
+Corps,Industrial,GE 4.75 29,General Electric Co 4.75% 2029,AFS,"34,235,308",4.71,4.84%,74,4.25%
+Corps,Industrial,GE 5.90 54,General Electric Co 5.90% 2054,HTM,"11,740,064",14.29,6.30%,79,4.25%
+Corps,Industrial,GE 6.50 44,General Electric Co 6.50% 2044,AFS,"24,427,902",14.73,6.37%,72,4.25%
+Corps,Technology,GOOG 4.25 27,Alphabet Inc 4.25% 2027,AFS,"47,782,685",2.85,4.56%,50,4.15%
+Corps,Technology,GOOG 4.48 27,Alphabet Inc 4.48% 2027,AFS,"24,213,007",3.18,4.49%,38,4.15%
+Corps,Technology,GOOG 4.49 27,Alphabet Inc 4.49% 2027,HTM,"36,907,888",2.59,4.58%,65,4.15%
+Corps,Technology,GOOG 4.72 31,Alphabet Inc 4.72% 2031,AFS,"19,431,477",6.01,4.84%,51,4.15%
+Corps,Technology,GOOG 5.05 31,Alphabet Inc 5.05% 2031,HTM,"30,023,732",6.74,5.24%,63,4.15%
+Corps,Technology,GOOG 5.50 44,Alphabet Inc 5.50% 2044,AFS,"18,632,273",13.01,6.09%,48,4.15%
+Corps,Technology,GOOG 6.06 34,Alphabet Inc 6.06% 2034,AFS,"18,679,275",9.37,5.83%,92,4.15%
+Corps,Industrial,HON 3.96 27,Honeywell International 3.96% 2027,HTM,"14,988,561",3.20,4.58%,58,4.18%
+Corps,Industrial,HON 4.51 29,Honeywell International 4.51% 2029,HTM,"23,884,089",4.95,5.03%,58,4.18%
+Corps,Industrial,HON 4.80 31,Honeywell International 4.80% 2031,AFS,"32,809,084",6.22,4.92%,65,4.18%
+Corps,Industrial,HON 4.86 31,Honeywell International 4.86% 2031,AFS,"34,691,239",6.23,4.74%,46,4.18%
+Corps,Industrial,HON 5.01 39,Honeywell International 5.01% 2039,AFS,"24,517,305",10.40,5.65%,55,4.18%
+Corps,Industrial,HON 5.39 39,Honeywell International 5.39% 2039,HTM,"22,365,450",10.08,5.40%,55,4.18%
+Corps,Industrial,HON 6.45 44,Honeywell International 6.45% 2044,HTM,"14,733,379",13.74,6.26%,75,4.18%
+Corps,Healthcare,JNJ 4.33 29,Johnson & Johnson 4.33% 2029,Fair Value,"13,228,985",5.02,4.46%,37,4.00%
+Corps,Healthcare,JNJ 4.60 27,Johnson & Johnson 4.60% 2027,AFS,"48,233,222",2.78,4.45%,50,4.00%
+Corps,Healthcare,JNJ 4.99 34,Johnson & Johnson 4.99% 2034,AFS,"5,290,893",8.91,5.16%,36,4.00%
+Corps,Healthcare,JNJ 5.03 34,Johnson & Johnson 5.03% 2034,HTM,"5,575,654",9.25,5.16%,30,4.00%
+Corps,Healthcare,JNJ 5.25 34,Johnson & Johnson 5.25% 2034,AFS,"11,965,109",8.28,5.22%,49,4.00%
+Corps,Healthcare,JNJ 5.27 34,Johnson & Johnson 5.27% 2034,AFS,"12,163,254",7.96,5.35%,51,4.00%
+Corps,Healthcare,JNJ 5.87 44,Johnson & Johnson 5.87% 2044,AFS,"22,043,630",13.56,6.10%,41,4.00%
+Corps,Consumer,KO 3.51 26,Coca-Cola Co 3.51% 2026,AFS,"38,516,246",1.52,4.03%,38,4.08%
+Corps,Consumer,KO 3.91 27,Coca-Cola Co 3.91% 2027,AFS,"15,954,570",3.06,4.35%,50,4.08%
+Corps,Consumer,KO 4.24 29,Coca-Cola Co 4.24% 2029,AFS,"16,701,591",4.31,4.55%,58,4.08%
+Corps,Consumer,KO 4.78 31,Coca-Cola Co 4.78% 2031,HTM,"13,903,815",6.44,4.87%,41,4.08%
+Corps,Consumer,KO 4.98 39,Coca-Cola Co 4.98% 2039,AFS,"23,922,309",10.39,5.51%,48,4.08%
+Corps,Consumer,KO 5.11 39,Coca-Cola Co 5.11% 2039,HTM,"22,853,434",10.73,5.57%,28,4.08%
+Corps,Consumer,KO 5.14 39,Coca-Cola Co 5.14% 2039,HTM,"12,943,671",11.81,5.77%,47,4.08%
+Corps,Consumer,MCD 4.49 27,McDonald's Corp 4.49% 2027,AFS,"27,329,380",3.19,4.56%,51,4.10%
+Corps,Consumer,MCD 4.55 29,McDonald's Corp 4.55% 2029,AFS,"23,496,069",4.48,4.46%,30,4.10%
+Corps,Consumer,MCD 4.74 29,McDonald's Corp 4.74% 2029,HTM,"34,052,470",5.16,4.79%,58,4.10%
+Corps,Consumer,MCD 5.65 54,McDonald's Corp 5.65% 2054,AFS,"6,518,668",16.82,6.64%,39,4.10%
+Corps,Consumer,MCD 5.74 39,McDonald's Corp 5.74% 2039,HTM,"20,180,717",11.30,5.87%,55,4.10%
+Corps,Consumer,MCD 5.91 44,McDonald's Corp 5.91% 2044,AFS,"11,887,675",14.54,6.34%,43,4.10%
+Corps,Technology,META 4.18 29,Meta Platforms Inc 4.18% 2029,Fair Value,"30,263,833",4.05,4.75%,67,4.22%
+Corps,Technology,META 4.47 29,Meta Platforms Inc 4.47% 2029,AFS,"25,503,315",5.14,5.04%,67,4.22%
+Corps,Technology,META 4.81 27,Meta Platforms Inc 4.81% 2027,HTM,"45,265,283",2.79,4.58%,67,4.22%
+Corps,Technology,META 4.83 26,Meta Platforms Inc 4.83% 2026,Fair Value,"29,638,506",2.14,4.72%,75,4.22%
+Corps,Technology,META 4.87 31,Meta Platforms Inc 4.87% 2031,HTM,"31,052,973",6.39,5.16%,71,4.22%
+Corps,Technology,META 5.42 44,Meta Platforms Inc 5.42% 2044,HTM,"21,275,900",14.09,6.14%,49,4.22%
+Corps,Technology,META 6.79 54,Meta Platforms Inc 6.79% 2054,Fair Value,"6,554,693",15.85,6.48%,78,4.22%
+Corps,Technology,MSFT 3.52 26,Microsoft Corp 3.52% 2026,AFS,"49,282,869",1.56,4.13%,45,4.10%
+Corps,Technology,MSFT 4.18 27,Microsoft Corp 4.18% 2027,HTM,"33,084,369",2.67,4.46%,50,4.10%
+Corps,Technology,MSFT 4.20 27,Microsoft Corp 4.20% 2027,Fair Value,"17,036,776",2.56,4.47%,66,4.10%
+Corps,Technology,MSFT 4.31 31,Microsoft Corp 4.31% 2031,AFS,"21,616,845",6.56,5.02%,43,4.10%
+Corps,Technology,MSFT 4.61 39,Microsoft Corp 4.61% 2039,AFS,"19,880,853",10.35,5.20%,35,4.10%
+Corps,Technology,MSFT 4.83 39,Microsoft Corp 4.83% 2039,HTM,"11,533,025",10.10,5.34%,52,4.10%
+Corps,Technology,MSFT 5.24 39,Microsoft Corp 5.24% 2039,AFS,"8,172,929",11.83,5.70%,49,4.10%
+Corps,Technology,MSFT 5.44 34,Microsoft Corp 5.44% 2034,AFS,"8,887,601",9.43,5.50%,60,4.10%
+Corps,Technology,NVDA 4.82 26,NVIDIA Corp 4.82% 2026,AFS,"41,409,001",2.10,4.68%,91,4.20%
+Corps,Technology,NVDA 5.39 44,NVIDIA Corp 5.39% 2044,AFS,"22,910,465",13.52,6.32%,70,4.20%
+Corps,Technology,NVDA 6.02 39,NVIDIA Corp 6.02% 2039,AFS,"7,022,454",10.88,6.08%,81,4.20%
+Corps,Technology,NVDA 6.51 44,NVIDIA Corp 6.51% 2044,AFS,"15,990,578",14.37,6.34%,68,4.20%
+Corps,Technology,NVDA 6.51 54,NVIDIA Corp 6.51% 2054,HTM,"11,573,291",16.53,6.51%,57,4.20%
+Corps,Technology,NVDA 6.56 54,NVIDIA Corp 6.56% 2054,Fair Value,"24,001,239",17.62,6.80%,72,4.20%
+Corps,Technology,NVDA 6.85 54,NVIDIA Corp 6.85% 2054,AFS,"6,626,976",14.29,6.54%,81,4.20%
+Corps,Consumer,PEP 3.69 26,PepsiCo Inc 3.69% 2026,AFS,"42,994,934",2.03,4.32%,52,4.06%
+Corps,Consumer,PEP 3.89 27,PepsiCo Inc 3.89% 2027,AFS,"28,625,346",2.56,4.22%,28,4.06%
+Corps,Consumer,PEP 4.64 31,PepsiCo Inc 4.64% 2031,AFS,"11,174,149",6.22,4.65%,46,4.06%
+Corps,Consumer,PEP 4.68 27,PepsiCo Inc 4.68% 2027,AFS,"24,026,069",2.69,4.61%,64,4.06%
+Corps,Consumer,PEP 4.77 31,PepsiCo Inc 4.77% 2031,HTM,"23,854,450",5.92,4.70%,26,4.06%
+Corps,Consumer,PEP 5.04 29,PepsiCo Inc 5.04% 2029,AFS,"26,625,917",4.25,4.88%,58,4.06%
+Corps,Consumer,PEP 5.39 34,PepsiCo Inc 5.39% 2034,AFS,"10,446,147",9.47,5.22%,29,4.06%
+Corps,Healthcare,PFE 3.85 26,Pfizer Inc 3.85% 2026,AFS,"23,405,097",1.84,4.39%,76,4.15%
+Corps,Healthcare,PFE 4.06 27,Pfizer Inc 4.06% 2027,AFS,"41,189,089",2.54,4.55%,74,4.15%
+Corps,Healthcare,PFE 4.55 31,Pfizer Inc 4.55% 2031,AFS,"11,021,715",6.47,5.03%,61,4.15%
+Corps,Healthcare,PFE 4.70 31,Pfizer Inc 4.70% 2031,HTM,"18,641,682",5.93,4.98%,54,4.15%
+Corps,Healthcare,PFE 5.65 34,Pfizer Inc 5.65% 2034,HTM,"6,635,181",7.58,5.46%,70,4.15%
+Corps,Healthcare,PFE 5.99 39,Pfizer Inc 5.99% 2039,AFS,"12,378,273",10.93,6.00%,89,4.15%
+Corps,Healthcare,PFE 6.12 54,Pfizer Inc 6.12% 2054,AFS,"12,285,397",14.71,6.19%,51,4.15%
+Corps,Consumer,PG 3.82 27,Procter & Gamble 3.82% 2027,AFS,"21,173,545",2.66,4.09%,21,4.00%
+Corps,Consumer,PG 3.99 26,Procter & Gamble 3.99% 2026,AFS,"37,129,250",2.14,4.06%,43,4.00%
+Corps,Consumer,PG 4.22 29,Procter & Gamble 4.22% 2029,AFS,"34,921,856",4.21,4.36%,24,4.00%
+Corps,Consumer,PG 4.55 31,Procter & Gamble 4.55% 2031,HTM,"11,642,716",5.84,4.84%,58,4.00%
+Corps,Consumer,PG 4.84 34,Procter & Gamble 4.84% 2034,HTM,"11,939,064",8.57,5.15%,30,4.00%
+Corps,Consumer,PG 5.01 44,Procter & Gamble 5.01% 2044,AFS,"22,961,086",12.20,5.64%,24,4.00%
+Corps,Energy,SLB 4.27 27,Schlumberger Ltd 4.27% 2027,AFS,"44,404,253",2.70,4.82%,95,4.30%
+Corps,Energy,SLB 4.79 31,Schlumberger Ltd 4.79% 2031,Fair Value,"29,271,353",6.55,5.43%,89,4.30%
+Corps,Energy,SLB 4.81 34,Schlumberger Ltd 4.81% 2034,AFS,"21,375,713",7.63,5.66%,91,4.30%
+Corps,Energy,SLB 4.91 29,Schlumberger Ltd 4.91% 2029,HTM,"12,554,840",4.19,5.14%,102,4.30%
+Corps,Energy,SLB 6.20 54,Schlumberger Ltd 6.20% 2054,AFS,"20,456,456",17.30,7.08%,103,4.30%
+Corps,Energy,SLB 6.36 39,Schlumberger Ltd 6.36% 2039,Fair Value,"22,147,202",12.17,6.34%,99,4.30%
+Corps,Energy,SLB 6.74 54,Schlumberger Ltd 6.74% 2054,AFS,"17,951,473",17.96,7.28%,89,4.30%
+Corps,Energy,SLB 7.32 54,Schlumberger Ltd 7.32% 2054,AFS,"6,158,409",17.08,7.17%,93,4.30%
+Corps,Healthcare,TMO 4.45 29,Thermo Fisher Scientific 4.45% 2029,AFS,"30,414,986",4.43,4.81%,55,4.12%
+Corps,Healthcare,TMO 4.51 26,Thermo Fisher Scientific 4.51% 2026,AFS,"32,595,214",1.82,4.37%,69,4.12%
+Corps,Healthcare,TMO 4.70 31,Thermo Fisher Scientific 4.70% 2031,AFS,"29,850,630",6.43,4.92%,49,4.12%
+Corps,Healthcare,TMO 4.77 27,Thermo Fisher Scientific 4.77% 2027,AFS,"36,848,330",2.77,4.59%,67,4.12%
+Corps,Healthcare,TMO 4.83 29,Thermo Fisher Scientific 4.83% 2029,AFS,"17,793,052",5.07,4.83%,53,4.12%
+Corps,Healthcare,TMO 5.48 34,Thermo Fisher Scientific 5.48% 2034,AFS,"21,836,576",7.63,5.43%,63,4.12%
+Corps,Healthcare,TMO 5.95 54,Thermo Fisher Scientific 5.95% 2054,HTM,"21,291,494",14.81,6.24%,55,4.12%
+Corps,Healthcare,UNH 4.14 29,UnitedHealth Group 4.14% 2029,AFS,"21,185,309",4.61,4.60%,40,4.10%
+Corps,Healthcare,UNH 4.50 29,UnitedHealth Group 4.50% 2029,HTM,"26,977,558",4.14,4.73%,52,4.10%
+Corps,Healthcare,UNH 4.88 29,UnitedHealth Group 4.88% 2029,AFS,"24,269,458",4.34,4.66%,64,4.10%
+Corps,Healthcare,UNH 5.30 44,UnitedHealth Group 5.30% 2044,AFS,"8,057,183",13.82,6.01%,46,4.10%
+Corps,Healthcare,UNH 5.41 44,UnitedHealth Group 5.41% 2044,AFS,"19,908,789",12.26,6.18%,74,4.10%
+Corps,Healthcare,UNH 5.49 44,UnitedHealth Group 5.49% 2044,AFS,"22,935,308",12.56,5.75%,42,4.10%
+Corps,Healthcare,UNH 5.71 54,UnitedHealth Group 5.71% 2054,AFS,"11,441,583",15.08,6.24%,48,4.10%
+Corps,Consumer,WMT 4.23 27,Walmart Inc 4.23% 2027,AFS,"28,965,095",2.82,4.61%,63,4.05%
+Corps,Consumer,WMT 4.55 27,Walmart Inc 4.55% 2027,AFS,"29,029,800",2.63,4.37%,40,4.05%
+Corps,Consumer,WMT 4.66 27,Walmart Inc 4.66% 2027,AFS,"36,400,898",2.61,4.55%,40,4.05%
+Corps,Consumer,WMT 4.80 29,Walmart Inc 4.80% 2029,Fair Value,"28,411,106",4.69,4.64%,25,4.05%
+Corps,Consumer,WMT 4.86 31,Walmart Inc 4.86% 2031,AFS,"13,747,936",6.14,4.89%,51,4.05%
+Corps,Consumer,WMT 4.86 34,Walmart Inc 4.86% 2034,HTM,"23,449,988",9.36,5.52%,56,4.05%
+Corps,Consumer,WMT 5.41 39,Walmart Inc 5.41% 2039,AFS,"15,854,489",11.80,5.89%,52,4.05%
+Corps,Energy,XOM 4.08 26,Exxon Mobil 4.08% 2026,AFS,"40,366,837",1.66,4.47%,60,4.18%
+Corps,Energy,XOM 4.30 27,Exxon Mobil 4.30% 2027,Fair Value,"42,957,413",2.66,4.68%,77,4.18%
+Corps,Energy,XOM 4.92 39,Exxon Mobil 4.92% 2039,AFS,"19,751,646",11.92,5.64%,53,4.18%
+Corps,Energy,XOM 5.50 34,Exxon Mobil 5.50% 2034,HTM,"17,550,109",9.03,5.26%,65,4.18%
+Corps,Energy,XOM 6.11 44,Exxon Mobil 6.11% 2044,HTM,"17,517,828",13.62,6.28%,63,4.18%
+Corps,Energy,XOM 6.23 44,Exxon Mobil 6.23% 2044,AFS,"21,578,309",14.59,6.43%,65,4.18%
+Corps,Energy,XOM 6.49 54,Exxon Mobil 6.49% 2054,Fair Value,"24,421,165",17.66,6.87%,74,4.18%
+EM,Sovereign,BRAZIL 5.67 29,Brazil Sovereign 5.67% 2029,AFS,"34,477,623",4.42,6.48%,219,4.80%
+EM,Sovereign,BRAZIL 6.31 27,Brazil Sovereign 6.31% 2027,AFS,"46,159,032",2.89,6.34%,238,4.80%
+EM,Sovereign,BRAZIL 6.60 29,Brazil Sovereign 6.60% 2029,AFS,"18,944,957",4.57,6.50%,218,4.80%
+EM,Sovereign,BRAZIL 6.84 44,Brazil Sovereign 6.84% 2044,AFS,"21,519,564",13.01,7.62%,225,4.80%
+EM,Sovereign,BRAZIL 6.98 44,Brazil Sovereign 6.98% 2044,HTM,"15,815,875",12.56,7.64%,223,4.80%
+EM,Sovereign,BRAZIL 7.18 34,Brazil Sovereign 7.18% 2034,AFS,"6,392,823",8.85,7.04%,232,4.80%
+EM,Sovereign,BRAZIL 7.42 54,Brazil Sovereign 7.42% 2054,HTM,"19,976,527",14.57,7.62%,213,4.80%
+EM,Sovereign,MEXICO 5.30 29,Mexico Sovereign 5.30% 2029,HTM,"17,038,030",4.90,6.07%,189,4.65%
+EM,Sovereign,MEXICO 6.65 54,Mexico Sovereign 6.65% 2054,AFS,"7,214,412",16.19,7.75%,183,4.65%
+EM,Sovereign,MEXICO 6.95 54,Mexico Sovereign 6.95% 2054,AFS,"9,252,888",16.78,7.64%,161,4.65%
+EM,Sovereign,MEXICO 7.49 44,Mexico Sovereign 7.49% 2044,AFS,"13,941,111",14.01,7.32%,170,4.65%
+EM,Sovereign,MEXICO 7.69 44,Mexico Sovereign 7.69% 2044,AFS,"22,166,834",14.22,7.45%,178,4.65%
+EM,Sovereign,MEXICO 7.77 44,Mexico Sovereign 7.77% 2044,AFS,"18,299,698",13.96,7.53%,187,4.65%
+EM,Corporate,PETRO 6.10 26,Petrobras 6.10% 2026,HTM,"44,025,038",1.57,6.33%,253,4.90%
+EM,Corporate,PETRO 6.29 34,Petrobras 6.29% 2034,AFS,"16,967,150",7.52,6.91%,231,4.90%
+EM,Corporate,PETRO 6.36 26,Petrobras 6.36% 2026,AFS,"37,095,764",2.12,6.42%,271,4.90%
+EM,Corporate,PETRO 6.64 34,Petrobras 6.64% 2034,HTM,"16,864,431",8.99,7.48%,254,4.90%
+EM,Corporate,PETRO 7.22 39,Petrobras 7.22% 2039,HTM,"13,691,919",11.29,7.44%,232,4.90%
+EM,Corporate,PETRO 7.23 31,Petrobras 7.23% 2031,AFS,"10,866,757",5.88,6.89%,257,4.90%
+EM,Corporate,PETRO 7.46 54,Petrobras 7.46% 2054,AFS,"21,627,470",17.42,8.54%,243,4.90%
+Fins,Insurance,AIG 4.68 26,American International Group 4.68% 2026,HTM,"33,345,571",1.98,4.59%,102,4.35%
+Fins,Insurance,AIG 5.05 29,American International Group 5.05% 2029,HTM,"28,558,701",5.06,5.19%,82,4.35%
+Fins,Insurance,AIG 5.12 29,American International Group 5.12% 2029,AFS,"19,691,840",4.17,4.99%,91,4.35%
+Fins,Insurance,AIG 5.32 31,American International Group 5.32% 2031,HTM,"28,906,616",6.63,5.63%,103,4.35%
+Fins,Insurance,AIG 5.88 54,American International Group 5.88% 2054,HTM,"9,508,775",16.04,6.83%,90,4.35%
+Fins,Insurance,AIG 6.01 54,American International Group 6.01% 2054,HTM,"17,867,304",16.01,6.73%,92,4.35%
+Fins,Banks-US,BAC 3.98 26,Bank of America 3.98% 2026,AFS,"35,876,992",1.89,4.24%,67,4.22%
+Fins,Banks-US,BAC 4.24 26,Bank of America 4.24% 2026,HTM,"43,939,361",1.58,4.39%,64,4.22%
+Fins,Banks-US,BAC 4.62 31,Bank of America 4.62% 2031,HTM,"26,064,399",5.81,4.86%,46,4.22%
+Fins,Banks-US,BAC 4.63 27,Bank of America 4.63% 2027,HTM,"26,133,904",2.74,4.41%,61,4.22%
+Fins,Banks-US,BAC 6.19 54,Bank of America 6.19% 2054,AFS,"11,567,625",15.50,6.37%,68,4.22%
+Fins,Banks-US,BAC 6.52 44,Bank of America 6.52% 2044,AFS,"22,557,823",14.78,6.37%,67,4.22%
+Fins,Banks-US,BAC 6.57 54,Bank of America 6.57% 2054,HTM,"7,182,193",17.01,6.55%,55,4.22%
+Fins,Banks-Foreign,BCS 4.43 27,Barclays PLC 4.43% 2027,AFS,"27,203,368",3.17,4.91%,83,4.32%
+Fins,Banks-Foreign,BCS 5.52 34,Barclays PLC 5.52% 2034,HTM,"14,188,935",8.45,5.37%,76,4.32%
+Fins,Banks-Foreign,BCS 5.89 39,Barclays PLC 5.89% 2039,AFS,"7,194,724",12.00,6.26%,90,4.32%
+Fins,Banks-Foreign,BCS 6.08 39,Barclays PLC 6.08% 2039,AFS,"5,242,415",10.34,5.82%,75,4.32%
+Fins,Banks-Foreign,BCS 6.47 44,Barclays PLC 6.47% 2044,AFS,"8,000,973",14.53,6.48%,90,4.32%
+Fins,Banks-Foreign,BCS 6.58 44,Barclays PLC 6.58% 2044,HTM,"18,187,078",14.52,6.73%,112,4.32%
+Fins,Banks-US,C 4.58 27,Citigroup Inc 4.58% 2027,AFS,"37,328,628",2.72,4.69%,85,4.35%
+Fins,Banks-US,C 4.72 27,Citigroup Inc 4.72% 2027,AFS,"29,166,403",3.10,5.04%,102,4.35%
+Fins,Banks-US,C 4.90 26,Citigroup Inc 4.90% 2026,AFS,"23,947,575",2.13,4.92%,95,4.35%
+Fins,Banks-US,C 4.96 34,Citigroup Inc 4.96% 2034,AFS,"14,457,839",7.81,5.61%,97,4.35%
+Fins,Banks-US,C 5.58 31,Citigroup Inc 5.58% 2031,AFS,"25,080,485",6.25,5.41%,102,4.35%
+Fins,Banks-US,C 6.05 54,Citigroup Inc 6.05% 2054,HTM,"16,940,938",14.23,6.44%,88,4.35%
+Fins,Banks-US,C 6.09 44,Citigroup Inc 6.09% 2044,AFS,"7,246,087",13.27,6.23%,97,4.35%
+Fins,Banks-US,C 6.46 54,Citigroup Inc 6.46% 2054,AFS,"17,932,118",16.06,7.00%,105,4.35%
+Fins,Banks-Foreign,DB 4.92 26,Deutsche Bank AG 4.92% 2026,HTM,"16,330,765",2.19,5.01%,119,4.45%
+Fins,Banks-Foreign,DB 5.47 29,Deutsche Bank AG 5.47% 2029,AFS,"12,848,916",4.39,5.29%,124,4.45%
+Fins,Banks-Foreign,DB 5.76 31,Deutsche Bank AG 5.76% 2031,Fair Value,"21,548,673",6.60,5.52%,101,4.45%
+Fins,Banks-Foreign,DB 5.78 34,Deutsche Bank AG 5.78% 2034,AFS,"5,874,713",8.54,5.96%,114,4.45%
+Fins,Banks-Foreign,DB 6.08 34,Deutsche Bank AG 6.08% 2034,AFS,"24,196,530",7.96,5.91%,123,4.45%
+Fins,Banks-Foreign,DB 6.13 54,Deutsche Bank AG 6.13% 2054,AFS,"12,773,056",14.38,6.78%,134,4.45%
+Fins,Banks-Foreign,DB 6.84 54,Deutsche Bank AG 6.84% 2054,HTM,"15,293,152",14.27,6.80%,117,4.45%
+Fins,Banks-Foreign,DB 7.15 44,Deutsche Bank AG 7.15% 2044,AFS,"13,242,619",14.83,7.03%,119,4.45%
+Fins,Banks-US,GS 4.28 26,Goldman Sachs Group 4.28% 2026,AFS,"33,753,969",1.62,4.56%,75,4.32%
+Fins,Banks-US,GS 4.79 31,Goldman Sachs Group 4.79% 2031,Fair Value,"29,886,249",6.56,5.34%,98,4.32%
+Fins,Banks-US,GS 5.13 31,Goldman Sachs Group 5.13% 2031,HTM,"23,500,298",5.87,5.24%,79,4.32%
+Fins,Banks-US,GS 5.48 39,Goldman Sachs Group 5.48% 2039,AFS,"12,099,926",10.48,5.74%,74,4.32%
+Fins,Banks-US,GS 6.03 34,Goldman Sachs Group 6.03% 2034,AFS,"6,202,847",8.62,5.79%,82,4.32%
+Fins,Banks-US,GS 6.41 54,Goldman Sachs Group 6.41% 2054,Fair Value,"18,389,739",16.13,6.53%,73,4.32%
+Fins,Banks-Foreign,HSBC 3.97 26,HSBC Holdings 3.97% 2026,AFS,"30,061,801",2.03,4.59%,70,4.28%
+Fins,Banks-Foreign,HSBC 4.27 29,HSBC Holdings 4.27% 2029,HTM,"11,999,135",4.57,4.88%,69,4.28%
+Fins,Banks-Foreign,HSBC 4.53 26,HSBC Holdings 4.53% 2026,AFS,"15,011,638",1.92,4.66%,92,4.28%
+Fins,Banks-Foreign,HSBC 4.67 27,HSBC Holdings 4.67% 2027,AFS,"26,351,895",3.01,4.89%,81,4.28%
+Fins,Banks-Foreign,HSBC 5.45 34,HSBC Holdings 5.45% 2034,AFS,"18,832,361",9.07,5.58%,77,4.28%
+Fins,Banks-Foreign,HSBC 5.51 34,HSBC Holdings 5.51% 2034,HTM,"8,475,052",7.96,5.40%,78,4.28%
+Fins,Banks-Foreign,HSBC 5.59 39,HSBC Holdings 5.59% 2039,AFS,"8,835,649",10.91,5.90%,96,4.28%
+Fins,Banks-Foreign,HSBC 5.77 54,HSBC Holdings 5.77% 2054,AFS,"24,276,446",15.93,6.58%,81,4.28%
+Fins,Banks-US,JPM 3.67 26,JPMorgan Chase 3.67% 2026,AFS,"49,252,095",1.61,4.30%,68,4.28%
+Fins,Banks-US,JPM 4.34 26,JPMorgan Chase 4.34% 2026,AFS,"20,683,366",1.59,4.36%,61,4.28%
+Fins,Banks-US,JPM 4.87 34,JPMorgan Chase 4.87% 2034,AFS,"6,033,937",9.47,5.44%,57,4.28%
+Fins,Banks-US,JPM 4.90 34,JPMorgan Chase 4.90% 2034,AFS,"15,434,601",7.53,5.13%,45,4.28%
+Fins,Banks-US,JPM 5.18 31,JPMorgan Chase 5.18% 2031,AFS,"19,934,475",5.98,5.25%,77,4.28%
+Fins,Banks-US,JPM 5.41 44,JPMorgan Chase 5.41% 2044,AFS,"16,162,805",14.12,6.31%,71,4.28%
+Fins,Insurance,MET 4.18 27,MetLife Inc 4.18% 2027,AFS,"30,190,678",2.81,4.67%,84,4.30%
+Fins,Insurance,MET 4.79 31,MetLife Inc 4.79% 2031,AFS,"33,516,981",6.07,5.12%,69,4.30%
+Fins,Insurance,MET 4.87 29,MetLife Inc 4.87% 2029,AFS,"30,066,083",5.05,5.14%,84,4.30%
+Fins,Insurance,MET 5.10 31,MetLife Inc 5.10% 2031,AFS,"10,654,918",5.98,5.02%,74,4.30%
+Fins,Insurance,MET 5.20 29,MetLife Inc 5.20% 2029,AFS,"20,531,201",4.72,5.16%,90,4.30%
+Fins,Insurance,MET 5.83 39,MetLife Inc 5.83% 2039,HTM,"19,153,619",11.25,6.11%,99,4.30%
+Fins,Insurance,MET 6.11 44,MetLife Inc 6.11% 2044,AFS,"12,676,659",12.36,6.32%,99,4.30%
+Fins,Banks-US,MS 4.15 26,Morgan Stanley 4.15% 2026,HTM,"36,218,853",2.10,4.69%,80,4.30%
+Fins,Banks-US,MS 4.62 31,Morgan Stanley 4.62% 2031,HTM,"26,024,302",6.49,5.28%,80,4.30%
+Fins,Banks-US,MS 4.75 31,Morgan Stanley 4.75% 2031,HTM,"34,803,950",6.32,5.33%,80,4.30%
+Fins,Banks-US,MS 5.24 34,Morgan Stanley 5.24% 2034,AFS,"12,939,630",8.22,5.40%,62,4.30%
+Fins,Banks-US,MS 5.67 39,Morgan Stanley 5.67% 2039,AFS,"5,723,208",12.07,6.28%,87,4.30%
+Fins,Banks-US,MS 6.12 54,Morgan Stanley 6.12% 2054,AFS,"6,618,386",17.22,6.92%,73,4.30%
+Fins,Banks-US,MS 6.28 54,Morgan Stanley 6.28% 2054,HTM,"6,782,489",17.37,7.18%,103,4.30%
+Fins,Banks-US,MS 7.12 54,Morgan Stanley 7.12% 2054,HTM,"12,612,466",17.72,6.96%,81,4.30%
+Fins,Insurance,PRU 4.39 27,Prudential Financial 4.39% 2027,AFS,"20,561,786",2.81,5.01%,101,4.32%
+Fins,Insurance,PRU 4.49 27,Prudential Financial 4.49% 2027,AFS,"11,306,447",3.17,4.98%,99,4.32%
+Fins,Insurance,PRU 4.94 31,Prudential Financial 4.94% 2031,AFS,"11,723,950",6.55,5.45%,96,4.32%
+Fins,Insurance,PRU 5.32 29,Prudential Financial 5.32% 2029,AFS,"24,133,256",4.88,5.10%,81,4.32%
+Fins,Insurance,PRU 5.59 44,Prudential Financial 5.59% 2044,Fair Value,"6,253,064",13.35,6.37%,87,4.32%
+Fins,Insurance,PRU 6.04 39,Prudential Financial 6.04% 2039,AFS,"9,990,924",10.65,6.03%,96,4.32%
+Fins,Insurance,PRU 6.07 44,Prudential Financial 6.07% 2044,AFS,"22,996,667",13.60,6.18%,74,4.32%
+Fins,Banks-Foreign,RY 3.97 26,Royal Bank of Canada 3.97% 2026,AFS,"18,707,575",2.03,4.56%,62,4.20%
+Fins,Banks-Foreign,RY 4.58 29,Royal Bank of Canada 4.58% 2029,AFS,"28,198,679",4.90,4.64%,58,4.20%
+Fins,Banks-Foreign,RY 4.85 31,Royal Bank of Canada 4.85% 2031,AFS,"31,981,716",6.79,5.06%,43,4.20%
+Fins,Banks-Foreign,RY 5.26 39,Royal Bank of Canada 5.26% 2039,AFS,"8,013,522",10.23,5.64%,55,4.20%
+Fins,Banks-Foreign,RY 6.15 54,Royal Bank of Canada 6.15% 2054,AFS,"8,611,892",16.54,6.73%,59,4.20%
+Fins,Banks-Foreign,RY 6.66 54,Royal Bank of Canada 6.66% 2054,AFS,"8,216,963",16.31,6.58%,53,4.20%
+Fins,Banks-US,WFC 4.16 27,Wells Fargo 4.16% 2027,AFS,"23,987,180",2.75,4.56%,75,4.30%
+Fins,Banks-US,WFC 4.17 27,Wells Fargo 4.17% 2027,AFS,"28,958,797",2.52,4.36%,63,4.30%
+Fins,Banks-US,WFC 4.92 31,Wells Fargo 4.92% 2031,AFS,"27,027,946",6.21,5.15%,74,4.30%
+Fins,Banks-US,WFC 5.34 39,Wells Fargo 5.34% 2039,HTM,"17,206,676",12.01,5.90%,56,4.30%
+Fins,Banks-US,WFC 5.84 54,Wells Fargo 5.84% 2054,Fair Value,"19,362,462",16.43,6.84%,82,4.30%
+Fins,Banks-US,WFC 6.72 54,Wells Fargo 6.72% 2054,AFS,"23,540,691",14.78,6.48%,72,4.30%
+MBS,Non-Agency,CSFB 5.21 31,Credit Suisse First Boston 5.21% 2031,AFS,"19,192,895",6.46,5.80%,131,4.50%
+MBS,Non-Agency,CSFB 5.50 27,Credit Suisse First Boston 5.50% 2027,HTM,"18,730,239",3.13,5.34%,126,4.50%
+MBS,Non-Agency,CSFB 5.56 26,Credit Suisse First Boston 5.56% 2026,AFS,"17,944,899",2.12,5.40%,146,4.50%
+MBS,Non-Agency,CSFB 6.07 34,Credit Suisse First Boston 6.07% 2034,HTM,"17,622,773",9.45,6.38%,149,4.50%
+MBS,Non-Agency,CSFB 6.50 54,Credit Suisse First Boston 6.50% 2054,HTM,"18,837,904",16.43,7.26%,142,4.50%
+MBS,Non-Agency,CSFB 6.61 39,Credit Suisse First Boston 6.61% 2039,AFS,"19,929,828",11.78,6.48%,132,4.50%
+MBS,Agency,FHLMC 4.43 34,Freddie Mac 4.43% 2034,AFS,"11,017,566",9.42,5.16%,42,4.15%
+MBS,Agency,FHLMC 4.71 29,Freddie Mac 4.71% 2029,AFS,"27,575,474",5.13,4.51%,44,4.15%
+MBS,Agency,FHLMC 4.98 34,Freddie Mac 4.98% 2034,AFS,"7,201,038",9.11,5.32%,39,4.15%
+MBS,Agency,FHLMC 5.37 44,Freddie Mac 5.37% 2044,AFS,"9,442,156",14.45,5.86%,15,4.15%
+MBS,Agency,FHLMC 5.81 44,Freddie Mac 5.81% 2044,HTM,"8,731,401",13.90,6.06%,45,4.15%
+MBS,Agency,FHLMC 5.83 44,Freddie Mac 5.83% 2044,Fair Value,"8,224,426",12.69,5.76%,40,4.15%
+MBS,Agency,FNMA 4.43 34,Fannie Mae 4.43% 2034,AFS,"20,107,228",7.85,4.97%,33,4.20%
+MBS,Agency,FNMA 4.67 29,Fannie Mae 4.67% 2029,AFS,"34,580,772",4.11,4.57%,30,4.20%
+MBS,Agency,FNMA 4.69 31,Fannie Mae 4.69% 2031,AFS,"18,342,715",6.25,4.78%,44,4.20%
+MBS,Agency,FNMA 4.99 34,Fannie Mae 4.99% 2034,Fair Value,"5,015,575",7.61,5.13%,47,4.20%
+MBS,Agency,FNMA 5.01 34,Fannie Mae 5.01% 2034,AFS,"18,665,270",7.53,4.93%,38,4.20%
+MBS,Agency,FNMA 5.20 44,Fannie Mae 5.20% 2044,HTM,"23,533,177",13.70,5.68%,23,4.20%
+MBS,Agency,FNMA 5.24 44,Fannie Mae 5.24% 2044,Fair Value,"5,933,313",13.83,5.84%,21,4.20%
+MBS,Agency,FNMA 5.96 54,Fannie Mae 5.96% 2054,AFS,"23,844,035",16.72,6.43%,42,4.20%
+MBS,Agency,GNMA 4.00 31,Ginnie Mae 4.00% 2031,AFS,"17,337,204",6.10,4.49%,21,4.20%
+MBS,Agency,GNMA 4.43 34,Ginnie Mae 4.43% 2034,HTM,"5,808,672",8.94,5.08%,32,4.20%
+MBS,Agency,GNMA 4.52 26,Ginnie Mae 4.52% 2026,HTM,"47,420,531",2.00,4.38%,45,4.20%
+MBS,Agency,GNMA 5.52 39,Ginnie Mae 5.52% 2039,HTM,"12,416,365",12.13,5.62%,31,4.20%
+MBS,Agency,GNMA 5.77 44,Ginnie Mae 5.77% 2044,AFS,"24,305,106",14.24,6.38%,63,4.20%
+MBS,Agency,GNMA 6.20 54,Ginnie Mae 6.20% 2054,AFS,"14,507,404",15.76,6.27%,42,4.20%
+MBS,Agency,GNMA 6.36 54,Ginnie Mae 6.36% 2054,Fair Value,"12,658,537",16.37,6.23%,45,4.20%
+MBS,Non-Agency,JPMMT 4.81 27,JP Morgan Mortgage Trust 4.81% 2027,HTM,"23,475,598",2.91,5.10%,123,4.50%
+MBS,Non-Agency,JPMMT 5.20 27,JP Morgan Mortgage Trust 5.20% 2027,AFS,"33,582,710",2.74,5.41%,139,4.50%
+MBS,Non-Agency,JPMMT 5.57 31,JP Morgan Mortgage Trust 5.57% 2031,AFS,"29,958,628",6.78,5.85%,137,4.50%
+MBS,Non-Agency,JPMMT 6.45 34,JP Morgan Mortgage Trust 6.45% 2034,AFS,"9,571,000",7.92,6.16%,144,4.50%
+MBS,Non-Agency,JPMMT 6.48 44,JP Morgan Mortgage Trust 6.48% 2044,HTM,"21,754,202",13.05,6.50%,129,4.50%
+MBS,Non-Agency,JPMMT 6.63 39,JP Morgan Mortgage Trust 6.63% 2039,HTM,"9,404,821",11.74,6.56%,121,4.50%
+Rates,TIPS,TIPS 3.34 26,Treasury Inflation-Protected 3.34% 2026,Fair Value,"45,001,274",1.99,3.69%,-21,4.00%
+Rates,TIPS,TIPS 3.42 27,Treasury Inflation-Protected 3.42% 2027,AFS,"47,028,152",2.94,3.88%,-19,4.00%
+Rates,TIPS,TIPS 3.98 29,Treasury Inflation-Protected 3.98% 2029,HTM,"34,602,758",4.61,4.08%,-16,4.00%
+Rates,TIPS,TIPS 4.03 26,Treasury Inflation-Protected 4.03% 2026,HTM,"18,691,579",2.14,3.97%,-17,4.00%
+Rates,TIPS,TIPS 5.01 44,Treasury Inflation-Protected 5.01% 2044,HTM,"10,742,759",13.14,5.19%,-14,4.00%
+Rates,TIPS,TIPS 5.06 39,Treasury Inflation-Protected 5.06% 2039,HTM,"6,669,282",10.38,5.01%,6,4.00%
+Rates,TIPS,TIPS 5.85 54,Treasury Inflation-Protected 5.85% 2054,HTM,"8,684,497",17.93,5.97%,-18,4.00%
+Rates,Treasury,UST 3.20 26,US Treasury 3.20% 2026,AFS,"38,246,577",2.09,3.68%,-11,4.00%
+Rates,Treasury,UST 3.52 26,US Treasury 3.52% 2026,AFS,"34,209,353",1.78,3.93%,14,4.00%
+Rates,Treasury,UST 3.58 27,US Treasury 3.58% 2027,HTM,"17,264,689",3.10,4.10%,16,4.00%
+Rates,Treasury,UST 4.22 34,US Treasury 4.22% 2034,Fair Value,"15,902,111",8.34,4.72%,3,4.00%
+Rates,Treasury,UST 4.26 31,US Treasury 4.26% 2031,Fair Value,"16,387,334",6.55,4.43%,-10,4.00%
+Rates,Treasury,UST 4.52 34,US Treasury 4.52% 2034,AFS,"22,442,714",8.21,4.51%,-21,4.00%
