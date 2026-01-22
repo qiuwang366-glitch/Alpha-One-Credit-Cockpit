@@ -683,11 +683,31 @@ def main():
         st.session_state.analyzer = None
     if "mobile_view" not in st.session_state:
         st.session_state.mobile_view = False
+    if "model_type" not in st.session_state:
+        st.session_state.model_type = "quadratic"
+    if "selected_ticker" not in st.session_state:
+        st.session_state.selected_ticker = None
 
     # ============================================
     # FILTERS (Main Page Expander for Mobile)
     # ============================================
     with st.expander(f"⚙️ {LABELS['filter_settings']}", expanded=False):
+        # Add model selection at the top
+        st.markdown("**🔬 Curve Model / 曲线模型**")
+        model_col1, model_col2 = st.columns(2)
+        with model_col1:
+            model_type = st.radio(
+                "Select Model",
+                options=["quadratic", "nelson_siegel"],
+                format_func=lambda x: "📉 Quadratic (Polynomial)" if x == "quadratic" else "📐 Nelson-Siegel (Advanced)",
+                horizontal=True,
+                label_visibility="collapsed",
+                key="model_selector"
+            )
+            st.session_state.model_type = model_type
+
+        st.markdown("---")
+
         filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 1])
 
         with filter_col1:
@@ -755,8 +775,8 @@ def main():
                     st.error("示例数据未找到，请上传CSV文件。")
                     return
 
-            # Fit curves
-            analyzer = PortfolioAnalyzer(df)
+            # Fit curves with selected model
+            analyzer = PortfolioAnalyzer(df, model_type=st.session_state.model_type)
             analyzer.fit_sector_curves()
 
             st.session_state.df = df
@@ -784,8 +804,8 @@ def main():
         min_liquidity=min_liquidity,
     )
 
-    # Re-fit curves on filtered data
-    filtered_analyzer = PortfolioAnalyzer(df_filtered)
+    # Re-fit curves on filtered data with selected model
+    filtered_analyzer = PortfolioAnalyzer(df_filtered, model_type=st.session_state.model_type)
     filtered_analyzer.fit_sector_curves()
 
     # ============================================
@@ -853,6 +873,9 @@ def main():
         # Build scatter plot with dark theme
         fig = go.Figure()
 
+        # Get selected ticker from session state
+        highlighted_ticker = st.session_state.get("selected_ticker", None)
+
         for sector in (selected_sectors or []):
             sector_data = df_filtered[df_filtered["Sector_L1"] == sector]
             if len(sector_data) == 0:
@@ -861,8 +884,14 @@ def main():
             color = DARK_SECTOR_COLORS.get(sector, "#6e7681")
             sector_cn = SECTOR_NAMES_CN.get(sector, sector)
 
-            # Create bilingual hover text
-            hover_text = sector_data.apply(
+            # Split data into selected and non-selected
+            if highlighted_ticker:
+                non_selected = sector_data[sector_data["Ticker"] != highlighted_ticker]
+            else:
+                non_selected = sector_data
+
+            # Create bilingual hover text for non-selected
+            hover_text = non_selected.apply(
                 lambda row: (
                     f"<b>{row['Ticker']}</b><br>"
                     f"名称: {row.get('Name', 'N/A')}<br>"
@@ -879,11 +908,12 @@ def main():
             )
 
             # Size based on nominal (normalized)
-            sizes = np.clip(sector_data["Nominal_USD"] / 1e6, 5, 25)
+            sizes = np.clip(non_selected["Nominal_USD"] / 1e6, 5, 25)
 
+            # Add non-selected bonds
             fig.add_trace(go.Scatter(
-                x=sector_data["Duration"],
-                y=sector_data["Yield"] * 100,
+                x=non_selected["Duration"],
+                y=non_selected["Yield"] * 100,
                 mode="markers",
                 name=f"{sector} / {sector_cn}",
                 marker=dict(
@@ -913,6 +943,38 @@ def main():
                 except Exception:
                     pass
 
+        # Highlight selected ticker with gold star
+        if highlighted_ticker and highlighted_ticker in df_filtered["Ticker"].values:
+            selected_bond = df_filtered[df_filtered["Ticker"] == highlighted_ticker].iloc[0]
+
+            hover_text_selected = (
+                f"<b>⭐ {selected_bond['Ticker']} (SELECTED)</b><br>"
+                f"名称: {selected_bond.get('Name', 'N/A')}<br>"
+                f"━━━━━━━━━━━━<br>"
+                f"YTM / 收益率: {selected_bond['Yield']*100:.2f}%<br>"
+                f"Duration / 久期: {selected_bond['Duration']:.2f}y<br>"
+                f"OAS / 利差: {selected_bond['OAS']:.0f}bp<br>"
+                f"Net Carry / 净息差: {selected_bond['Net_Carry']*100:.2f}%<br>"
+                f"Z-Score / Z分数: {selected_bond['Z_Score']:.2f}<br>"
+                f"━━━━━━━━━━━━<br>"
+                f"Notional / 本金: {format_currency(selected_bond['Nominal_USD'])}"
+            )
+
+            fig.add_trace(go.Scatter(
+                x=[selected_bond["Duration"]],
+                y=[selected_bond["Yield"] * 100],
+                mode="markers",
+                name="Selected / 选中",
+                marker=dict(
+                    size=30,
+                    color="#FFD700",  # Gold
+                    symbol="star",
+                    line=dict(width=3, color="white"),
+                ),
+                hovertemplate=hover_text_selected + "<extra></extra>",
+                showlegend=True,
+            ))
+
         # Apply dark theme layout
         apply_dark_theme(
             fig,
@@ -935,20 +997,227 @@ def main():
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Regression Statistics (collapsed by default)
-        with st.expander("📊 Regression Stats / 回归统计"):
+        # Model Parameters and Statistics
+        with st.expander("📊 Model Stats & Parameters / 模型统计与参数"):
             regression_results = filtered_analyzer.get_regression_results()
             if regression_results:
                 stats_data = []
                 for sector, r in regression_results.items():
-                    stats_data.append({
-                        f"{LABELS['sector']}": f"{sector} / {SECTOR_NAMES_CN.get(sector, sector)}",
+                    sector_display = f"{sector} / {SECTOR_NAMES_CN.get(sector, sector)}"
+                    base_stats = {
+                        f"{LABELS['sector']}": sector_display,
                         "R²": f"{r.r_squared:.4f}",
                         "N": r.sample_count,
                         "Dur Range": f"{r.duration_range[0]:.1f}-{r.duration_range[1]:.1f}",
                         "Residual σ": f"{r.residual_std*100:.2f}%",
-                    })
+                    }
+
+                    # Add model-specific parameters
+                    if st.session_state.model_type == "nelson_siegel":
+                        base_stats.update({
+                            "β₀ (Long)": f"{r.beta_0*100:.2f}%",
+                            "β₁ (Short)": f"{r.beta_1*100:.2f}%",
+                            "β₂ (Curve)": f"{r.beta_2*100:.2f}%",
+                            "λ (Decay)": f"{r.lambda_:.2f}",
+                        })
+                    else:
+                        base_stats.update({
+                            "Coeff a": f"{r.a:.6f}",
+                            "Coeff b": f"{r.b:.4f}",
+                            "Coeff c": f"{r.c:.4f}",
+                        })
+
+                    stats_data.append(base_stats)
+
                 st.dataframe(pd.DataFrame(stats_data), use_container_width=True, hide_index=True)
+
+                # Add explanation for Nelson-Siegel parameters
+                if st.session_state.model_type == "nelson_siegel":
+                    st.markdown("""
+                    **Nelson-Siegel Parameters:**
+                    - **β₀ (Long-Term)**: Long-term yield level as duration → ∞
+                    - **β₁ (Short-Term)**: Short-term component (slope at origin)
+                    - **β₂ (Curvature)**: Medium-term curvature component
+                    - **λ (Decay)**: Controls where the curvature peaks
+                    """)
+
+        # ============================================
+        # SINGLE SECURITY ANALYSIS
+        # ============================================
+        st.markdown(f'<div class="section-header">🔍 Single Security Analysis / 单券分析</div>', unsafe_allow_html=True)
+        st.markdown("*Drill down into individual securities and compare to sector curve*")
+        st.markdown("*深入分析单个证券并与板块曲线对比*")
+
+        # Ticker selection
+        ticker_col1, ticker_col2 = st.columns([2, 1])
+
+        with ticker_col1:
+            available_tickers = sorted(df_filtered["Ticker"].unique())
+            selected_ticker = st.selectbox(
+                "Select Ticker / 选择代码",
+                options=[""] + available_tickers,
+                format_func=lambda x: "-- Select a ticker --" if x == "" else x,
+                key="ticker_selector"
+            )
+
+        if selected_ticker and selected_ticker != "":
+            st.session_state.selected_ticker = selected_ticker
+
+            # Get bond details
+            bond_data = df_filtered[df_filtered["Ticker"] == selected_ticker].iloc[0]
+
+            # Display bond information
+            bond_col1, bond_col2, bond_col3 = st.columns(3)
+
+            with bond_col1:
+                st.markdown(render_metric_card(
+                    "Current YTM / 当前收益率",
+                    format_percentage(bond_data["Yield"]),
+                    None,
+                    "neutral",
+                    "blue"
+                ), unsafe_allow_html=True)
+
+            with bond_col2:
+                st.markdown(render_metric_card(
+                    "OAS / 期权调整利差",
+                    f"{bond_data['OAS']:.0f} bp",
+                    None,
+                    "neutral",
+                    "purple"
+                ), unsafe_allow_html=True)
+
+            with bond_col3:
+                z_class = get_z_score_class(bond_data["Z_Score"])
+                z_accent = "red" if z_class == "rich" else "green" if z_class == "cheap" else "yellow"
+                st.markdown(render_metric_card(
+                    "Z-Score / Z分数",
+                    f"{bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
+                    get_z_score_label(bond_data["Z_Score"]),
+                    "neutral",
+                    z_accent
+                ), unsafe_allow_html=True)
+
+            # Scenario Analysis Table
+            st.markdown("**📊 Scenario Analysis / 情景分析**")
+
+            scenario_col1, scenario_col2 = st.columns([2, 1])
+
+            with scenario_col1:
+                # Calculate fair value from model
+                fair_yield = bond_data.get("Model_Yield", bond_data["Yield"])
+                residual = bond_data.get("Residual", 0)
+
+                scenario_data = {
+                    "Metric / 指标": [
+                        "Actual Yield / 实际收益率",
+                        "Fair Yield (Model) / 公允收益率（模型）",
+                        "Residual / 残差",
+                        "Z-Score / Z分数",
+                        "Interpretation / 解释"
+                    ],
+                    "Value / 数值": [
+                        format_percentage(bond_data["Yield"]),
+                        format_percentage(fair_yield),
+                        f"{residual*100:.2f}%" if not pd.isna(residual) else "N/A",
+                        f"{bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
+                        get_z_score_label(bond_data["Z_Score"])
+                    ]
+                }
+
+                st.dataframe(pd.DataFrame(scenario_data), use_container_width=True, hide_index=True)
+
+            with scenario_col2:
+                st.markdown("**📝 Notes / 注释**")
+                if not pd.isna(bond_data['Z_Score']):
+                    if bond_data['Z_Score'] < -1.5:
+                        st.markdown("⚠️ **Trading Rich / 偏贵**")
+                        st.markdown("Consider selling / 考虑卖出")
+                    elif bond_data['Z_Score'] > 1.5:
+                        st.markdown("✅ **Trading Cheap / 偏便宜**")
+                        st.markdown("Consider buying / 考虑买入")
+                    else:
+                        st.markdown("ℹ️ **Fair Value / 公允价值**")
+                        st.markdown("Hold / 持有")
+
+            # Issuer Curve Analysis
+            st.markdown("**🏢 Issuer Curve / 发行人曲线**")
+
+            # Extract issuer from ticker or name (simple heuristic)
+            issuer = selected_ticker.split()[0] if " " in selected_ticker else selected_ticker[:3]
+
+            # Find sibling bonds (same issuer)
+            sibling_mask = df_filtered["Ticker"].str.contains(issuer, case=False, na=False)
+            sibling_bonds = df_filtered[sibling_mask]
+
+            if len(sibling_bonds) > 1:
+                st.markdown(f"*Found {len(sibling_bonds)} bonds from issuer: {issuer} / 发现 {len(sibling_bonds)} 个来自发行人 {issuer} 的债券*")
+
+                # Create issuer-specific curve chart
+                fig_issuer = go.Figure()
+
+                # Plot all sibling bonds
+                for idx, row in sibling_bonds.iterrows():
+                    is_selected = row["Ticker"] == selected_ticker
+                    marker_size = 20 if is_selected else 12
+                    marker_color = "#FFD700" if is_selected else DARK_SECTOR_COLORS.get(row["Sector_L1"], "#6e7681")
+                    marker_symbol = "star" if is_selected else "circle"
+
+                    hover_text = (
+                        f"<b>{row['Ticker']}</b><br>"
+                        f"YTM: {row['Yield']*100:.2f}%<br>"
+                        f"Duration: {row['Duration']:.2f}y<br>"
+                        f"OAS: {row['OAS']:.0f}bp<br>"
+                        f"Z-Score: {row['Z_Score']:.2f}"
+                    )
+
+                    fig_issuer.add_trace(go.Scatter(
+                        x=[row["Duration"]],
+                        y=[row["Yield"] * 100],
+                        mode="markers",
+                        name=row["Ticker"],
+                        marker=dict(
+                            size=marker_size,
+                            color=marker_color,
+                            symbol=marker_symbol,
+                            line=dict(width=2, color="white" if is_selected else "rgba(255,255,255,0.3)"),
+                        ),
+                        hovertemplate=hover_text + "<extra></extra>",
+                        showlegend=False,
+                    ))
+
+                # Add sector curve if available
+                sector = bond_data["Sector_L1"]
+                regression_results = filtered_analyzer.get_regression_results()
+                if sector in regression_results:
+                    try:
+                        x_curve, y_curve = filtered_analyzer.get_curve_points(sector, n_points=50)
+                        fig_issuer.add_trace(go.Scatter(
+                            x=x_curve,
+                            y=y_curve * 100,
+                            mode="lines",
+                            name=f"{sector} Curve",
+                            line=dict(color=DARK_SECTOR_COLORS.get(sector, "#6e7681"), width=2, dash="dash"),
+                            hoverinfo="skip",
+                        ))
+                    except Exception:
+                        pass
+
+                apply_dark_theme(
+                    fig_issuer,
+                    xaxis_title="Duration / 久期 (Years)",
+                    yaxis_title="YTM / 到期收益率 (%)",
+                    hovermode="closest",
+                    height=350,
+                    margin=dict(l=60, r=20, t=40, b=60),
+                    title=f"Issuer Curve: {issuer}",
+                )
+
+                st.plotly_chart(fig_issuer, use_container_width=True)
+            else:
+                st.info(f"Only one bond found for issuer {issuer}. / 该发行人仅有一个债券。")
+        else:
+            st.info("☝️ Select a ticker above to see detailed analysis / 选择上方的代码查看详细分析")
 
     # ============================================
     # TAB 2: ALPHA OPTIMIZATION LAB
