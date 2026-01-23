@@ -214,7 +214,26 @@ $$Yield(\tau) = \beta_0 + \beta_1 \cdot \frac{1-e^{-\tau/\lambda}}{\tau/\lambda}
 - Carry efficiency distribution
 - Position exposure summaries
 
-### Tab 3: Management Brief
+### Tab 3: Issuer 360 Dashboard
+- **Issuer Selection**: Dropdown to select any issuer from the portfolio with quick stats
+- **Section A - Valuation Curve**:
+  - Scatter plot of issuer's bonds (gold diamonds) overlaid on sector curve
+  - Issuer-specific curve interpolation (if 3+ bonds available)
+  - Sector benchmark curve (Nelson-Siegel) for comparison
+  - Visual insight: trading Wide (Rich) or Tight (Cheap) vs. sector
+- **Section B - Financial Dashboard**:
+  - 2x2 grid of quarterly trend charts (8 quarters)
+  - Deleveraging: Bar chart (Total Liabilities) + Line (Net Leverage)
+  - Liquidity: Stacked area (Cash vs. Net Interest Expense)
+  - Profitability: Line chart (EBITDA Margin)
+  - Growth: Bar chart (Revenue QoQ)
+- **Section C - Credit Peers**:
+  - Radar chart comparing issuer vs. sector average
+  - Metrics: Net Leverage (Inverse), Interest Coverage, EBITDA Margin, Cash Ratio, Revenue Growth
+  - Automated insights and peer statistics
+  - Fallback to side-by-side bar chart if radar chart fails
+
+### Tab 4: Management Brief
 - One-click executive summary generation
 - Portfolio metrics overview
 - Sector allocation visualization
@@ -440,9 +459,66 @@ For questions or support, please open an issue in the repository.
 **Commits:**
 - TBD - Phase 3: Integrate financial fundamentals with Credit Inspector panel
 
+### 2026-01-23 (Phase 3.5: Issuer 360 Dashboard)
+
+**Comprehensive Issuer Deep Dive**
+- Created new Tab 3 "Issuer 360 / 发行人全景" dedicated to single issuer analysis
+- Moved Executive Brief to Tab 4 to accommodate new dashboard
+- Issuer dropdown selector with real-time quick stats (bond count, total exposure)
+- Dynamic filtering to show only issuers with bonds in current portfolio
+
+**Section A: Valuation Curve (Issuer vs. Sector)**
+- Scatter plot with issuer's bonds as gold diamond markers
+- Issuer-specific yield curve interpolation (linear) for 3+ bonds
+- Sector benchmark curve (Nelson-Siegel) overlaid for comparison
+- Visual insight panel: identifies if issuer is trading Wide/Tight vs. sector
+- Avg Z-Score calculation across all issuer bonds with color-coded signals
+- Quick metrics: weighted duration, weighted YTM, bond count
+
+**Section B: Financial Dashboard (2x2 Grid)**
+- Quarterly trend analysis using last 8 quarters of financial data
+- Chart 1 - Deleveraging: Dual-axis chart with Total Liabilities (bars, left) + Net Leverage (line, right)
+- Chart 2 - Liquidity: Stacked area showing Cash vs. Net Interest Expense
+- Chart 3 - Profitability: Line chart with fill showing EBITDA Margin trend
+- Chart 4 - Growth: Color-coded bar chart (green/red) for Revenue QoQ Growth
+- All charts use Bloomberg-style minimalist design with dark theme
+
+**Section C: Credit Peers Comparison**
+- Automated peer group identification based on issuer's sector
+- Calculation of sector averages for latest quarter across 5 key metrics
+- Radar chart (spider chart) comparing issuer vs. sector average:
+  - Net Leverage (Inverted for better visual interpretation)
+  - Interest Coverage
+  - EBITDA Margin
+  - Cash Ratio
+  - Revenue Growth
+- Fallback to side-by-side comparison table if radar chart fails
+- Automated insights generation: identifies strengths/weaknesses vs. peers
+- Peer statistics panel: sector name, peer count, key takeaways
+
+**Technical Implementation**
+- Integration with `FinancialDataLoader` for quarterly metrics
+- Efficient use of issuer fundamentals cache built at app startup
+- Robust error handling for missing financial data
+- Graceful degradation when peer data unavailable
+- Uses `scipy.interpolate.interp1d` for issuer curve fitting
+- Color-coded insights using conditional logic on metric comparisons
+- Responsive 2-column layouts throughout for desktop/mobile
+
+**User Experience**
+- Clear visual hierarchy with three distinct sections
+- All text bilingual (English/Chinese) throughout
+- Tooltips and hover states for all interactive elements
+- Empty state messages when issuer has no bonds or data
+- Seamless integration with existing portfolio filters
+- Professional Bloomberg-style dark theme maintained
+
+**Commits:**
+- TBD - Phase 3.5: Implement Issuer 360 comprehensive dashboard
+
 ---
 
-**Total Development Time**: 3 days
-**Current Version**: 3.0 (Phase 3)
-**Lines of Code**: ~4,200
+**Total Development Time**: 4 days
+**Current Version**: 3.5 (Phase 3.5)
+**Lines of Code**: ~5,500
 **Test Coverage**: In Progress
