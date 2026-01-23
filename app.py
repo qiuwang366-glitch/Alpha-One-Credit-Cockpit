@@ -806,28 +806,7 @@ def render_bond_card(row: pd.Series) -> str:
 # ============================================
 def main():
     """Main application entry point."""
-    # Inject dark theme CSS
-    st.markdown(DARK_THEME_CSS, unsafe_allow_html=True)
-
-    # Header with Language Toggle
-    header_col1, header_col2 = st.columns([4, 1])
-
-    with header_col1:
-        st.markdown(f'<h1 class="main-header">{LABELS["app_title"]}</h1>', unsafe_allow_html=True)
-        st.markdown(f'<p class="sub-header">{LABELS["app_subtitle"]}</p>', unsafe_allow_html=True)
-
-    with header_col2:
-        # Language toggle button
-        lang_button = st.button(
-            f"🌐 {st.session_state.language}",
-            key="lang_toggle",
-            help="Switch Language / 切换语言"
-        )
-        if lang_button:
-            st.session_state.language = "CN" if st.session_state.language == "EN" else "EN"
-            st.rerun()
-
-    # Initialize session state
+    # Initialize session state FIRST (before any UI elements that depend on it)
     if "data_loaded" not in st.session_state:
         st.session_state.data_loaded = False
     if "df" not in st.session_state:
@@ -850,6 +829,27 @@ def main():
     # Initialize dynamic sector color map in session state
     if "sector_color_map" not in st.session_state:
         st.session_state.sector_color_map = {}
+
+    # Inject dark theme CSS
+    st.markdown(DARK_THEME_CSS, unsafe_allow_html=True)
+
+    # Header with Language Toggle
+    header_col1, header_col2 = st.columns([4, 1])
+
+    with header_col1:
+        st.markdown(f'<h1 class="main-header">{LABELS["app_title"]}</h1>', unsafe_allow_html=True)
+        st.markdown(f'<p class="sub-header">{LABELS["app_subtitle"]}</p>', unsafe_allow_html=True)
+
+    with header_col2:
+        # Language toggle button
+        lang_button = st.button(
+            f"🌐 {st.session_state.language}",
+            key="lang_toggle",
+            help="Switch Language / 切换语言"
+        )
+        if lang_button:
+            st.session_state.language = "CN" if st.session_state.language == "EN" else "EN"
+            st.rerun()
 
     # ============================================
     # FILTERS (Main Page Expander for Mobile)
