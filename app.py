@@ -1083,9 +1083,12 @@ def main():
                 portfolio_bond_tickers = df_filtered['Ticker'].str.split().str[0].unique()
                 available_issuers = unique_issuers[unique_issuers['Bond_Ticker'].isin(portfolio_bond_tickers)].copy()
 
+                # Filter out rows with missing Equity_Ticker or Issuer_Name
+                available_issuers = available_issuers.dropna(subset=['Equity_Ticker', 'Issuer_Name'])
+
                 # Create display names: "AAPL - Apple Inc"
                 if len(available_issuers) > 0:
-                    available_issuers['Display_Name'] = available_issuers['Equity_Ticker'] + " - " + available_issuers['Issuer_Name']
+                    available_issuers['Display_Name'] = available_issuers['Equity_Ticker'].astype(str) + " - " + available_issuers['Issuer_Name'].astype(str)
                     issuer_options = sorted(available_issuers['Display_Name'].unique())
                 else:
                     issuer_options = []
