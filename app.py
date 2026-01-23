@@ -31,13 +31,16 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Force reload of modules during development to avoid cache issues
 import src.module_b.analytics
 import src.module_b.data_loader
+import src.module_b.financials
 import src.utils.constants
 importlib.reload(src.utils.constants)
 importlib.reload(src.module_b.data_loader)
 importlib.reload(src.module_b.analytics)
+importlib.reload(src.module_b.financials)
 
 from src.module_b.data_loader import DataLoader, DataValidationError
 from src.module_b.analytics import PortfolioAnalyzer
+from src.module_b.financials import FinancialDataLoader
 from src.utils.constants import SECTOR_COLORS, Z_SCORE_THRESHOLDS
 
 # ============================================
@@ -65,7 +68,7 @@ DARK_THEME_CSS = """
 
     /* ====== ROOT VARIABLES ====== */
     :root {
-        --bg-primary: #0d1117;
+        --bg-primary: #121212;
         --bg-secondary: #161b22;
         --bg-tertiary: #21262d;
         --bg-card: rgba(33, 38, 45, 0.85);
@@ -74,7 +77,8 @@ DARK_THEME_CSS = """
         --text-primary: #e6edf3;
         --text-secondary: #8b949e;
         --text-muted: #6e7681;
-        --accent-blue: #58a6ff;
+        --accent-blue: #00B0FF;
+        --accent-orange: #FF9800;
         --accent-green: #3fb950;
         --accent-red: #f85149;
         --accent-yellow: #d29922;
@@ -169,6 +173,7 @@ DARK_THEME_CSS = """
 
     /* Card variants */
     .metric-card.accent-blue { border-left: 3px solid var(--accent-blue); }
+    .metric-card.accent-orange { border-left: 3px solid var(--accent-orange); }
     .metric-card.accent-green { border-left: 3px solid var(--accent-green); }
     .metric-card.accent-red { border-left: 3px solid var(--accent-red); }
     .metric-card.accent-yellow { border-left: 3px solid var(--accent-yellow); }
@@ -431,6 +436,79 @@ DARK_THEME_CSS = """
         background: rgba(210, 153, 34, 0.15);
         color: var(--accent-yellow);
         border: 1px solid rgba(210, 153, 34, 0.3);
+    }
+
+    /* ====== LANGUAGE TOGGLE ====== */
+    .lang-toggle {
+        display: inline-block;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-left: 1rem;
+    }
+
+    .lang-toggle:hover {
+        border-color: var(--accent-orange);
+        color: var(--accent-orange);
+    }
+
+    .lang-toggle.active {
+        background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-blue) 100%);
+        color: white;
+        border-color: var(--accent-orange);
+    }
+
+    /* ====== CREDIT INSPECTOR ====== */
+    .inspector-header {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--accent-orange);
+        margin: 1.5rem 0 1rem 0;
+        padding: 0.5rem 0;
+        border-bottom: 2px solid var(--accent-orange);
+        font-family: var(--font-mono);
+    }
+
+    .inspector-subheader {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        font-style: italic;
+    }
+
+    .fundamental-panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-left: 3px solid var(--accent-blue);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .fundamental-title {
+        font-size: 0.875rem;
+        color: var(--accent-blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .issuer-info {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-family: var(--font-mono);
+    }
+
+    .issuer-info .ticker {
+        color: var(--accent-orange);
+        font-weight: 600;
     }
 </style>
 """
@@ -731,9 +809,23 @@ def main():
     # Inject dark theme CSS
     st.markdown(DARK_THEME_CSS, unsafe_allow_html=True)
 
-    # Header
-    st.markdown(f'<h1 class="main-header">{LABELS["app_title"]}</h1>', unsafe_allow_html=True)
-    st.markdown(f'<p class="sub-header">{LABELS["app_subtitle"]}</p>', unsafe_allow_html=True)
+    # Header with Language Toggle
+    header_col1, header_col2 = st.columns([4, 1])
+
+    with header_col1:
+        st.markdown(f'<h1 class="main-header">{LABELS["app_title"]}</h1>', unsafe_allow_html=True)
+        st.markdown(f'<p class="sub-header">{LABELS["app_subtitle"]}</p>', unsafe_allow_html=True)
+
+    with header_col2:
+        # Language toggle button
+        lang_button = st.button(
+            f"🌐 {st.session_state.language}",
+            key="lang_toggle",
+            help="Switch Language / 切换语言"
+        )
+        if lang_button:
+            st.session_state.language = "CN" if st.session_state.language == "EN" else "EN"
+            st.rerun()
 
     # Initialize session state
     if "data_loaded" not in st.session_state:
@@ -748,6 +840,12 @@ def main():
         st.session_state.model_type = "quadratic"
     if "selected_ticker" not in st.session_state:
         st.session_state.selected_ticker = None
+    if "language" not in st.session_state:
+        st.session_state.language = "EN"  # Default to English
+    if "financial_loader" not in st.session_state:
+        st.session_state.financial_loader = None
+    if "fundamentals_loaded" not in st.session_state:
+        st.session_state.fundamentals_loaded = False
 
     # Initialize dynamic sector color map in session state
     if "sector_color_map" not in st.session_state:
@@ -867,6 +965,24 @@ def main():
         st.info("☝️ Expand 'Filter Settings' above to upload data or use sample data")
         st.info("☝️ 展开上方'筛选条件'上传数据或使用示例数据")
         return
+
+    # Load financial fundamentals data (one-time load)
+    if not st.session_state.fundamentals_loaded:
+        try:
+            financial_loader = FinancialDataLoader()
+            if financial_loader.load_data():
+                st.session_state.financial_loader = financial_loader
+                st.session_state.fundamentals_loaded = True
+                coverage_stats = financial_loader.get_coverage_stats()
+                logger.info(
+                    f"Loaded fundamentals for {coverage_stats['bonds_with_fundamentals']} "
+                    f"out of {coverage_stats['total_bonds']} bonds "
+                    f"({coverage_stats['coverage_rate']*100:.1f}% coverage)"
+                )
+        except Exception as e:
+            logger.warning(f"Could not load financial fundamentals: {e}")
+            # Continue without fundamentals
+            st.session_state.fundamentals_loaded = True  # Mark as attempted
 
     # Get filtered data
     analyzer = st.session_state.analyzer
@@ -1436,6 +1552,155 @@ def main():
                 st.plotly_chart(fig_issuer, use_container_width=True)
             else:
                 st.info(f"Only one bond found for issuer {issuer}. / 该发行人仅有一个债券。")
+
+            # ============================================
+            # CREDIT INSPECTOR (FUNDAMENTALS)
+            # ============================================
+            st.markdown('<div class="inspector-header">🔍 Credit Inspector / 信用分析</div>', unsafe_allow_html=True)
+            st.markdown('<div class="inspector-subheader">Combining Pricing Signals & Financial Fundamentals / 结合定价信号与财务基本面</div>', unsafe_allow_html=True)
+
+            inspector_col1, inspector_col2 = st.columns([1, 1])
+
+            # LEFT COLUMN: Pricing Summary
+            with inspector_col1:
+                st.markdown('<div class="fundamental-panel">', unsafe_allow_html=True)
+                st.markdown('<div class="fundamental-title">📊 Pricing Analysis / 定价分析</div>', unsafe_allow_html=True)
+
+                # Display pricing metrics (already calculated above)
+                pricing_summary_col1, pricing_summary_col2 = st.columns(2)
+
+                with pricing_summary_col1:
+                    st.markdown(render_metric_card(
+                        "Fair Value / 公允价值",
+                        format_percentage(bond_data.get("Model_Yield", bond_data["Yield"])),
+                        "NS Model / NS模型",
+                        "neutral",
+                        "blue"
+                    ), unsafe_allow_html=True)
+
+                with pricing_summary_col2:
+                    z_class = get_z_score_class(bond_data["Z_Score"])
+                    z_accent = "red" if z_class == "rich" else "green" if z_class == "cheap" else "yellow"
+                    st.markdown(render_metric_card(
+                        "Valuation / 估值",
+                        get_z_score_label(bond_data["Z_Score"]),
+                        f"Z-Score: {bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
+                        "neutral",
+                        z_accent
+                    ), unsafe_allow_html=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            # RIGHT COLUMN: Financial Fundamentals
+            with inspector_col2:
+                st.markdown('<div class="fundamental-panel">', unsafe_allow_html=True)
+                st.markdown('<div class="fundamental-title">💼 Financial Fundamentals / 财务基本面</div>', unsafe_allow_html=True)
+
+                # Get fundamental data
+                if st.session_state.financial_loader is not None:
+                    fundamentals = st.session_state.financial_loader.get_issuer_fundamentals(selected_ticker)
+
+                    if fundamentals is not None:
+                        latest = fundamentals.latest_quarter
+
+                        # Display issuer information
+                        st.markdown(
+                            f'<div class="issuer-info">'
+                            f'<span class="ticker">{fundamentals.equity_ticker}</span> | {fundamentals.issuer_name}'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                        if latest is not None:
+                            # KPI Cards for latest quarter
+                            kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
+
+                            with kpi_col1:
+                                rev_growth = latest.revenue_qoq_growth
+                                rev_growth_str = f"{rev_growth*100:+.1f}%" if rev_growth is not None else "N/A"
+                                rev_delta_type = "positive" if (rev_growth and rev_growth > 0) else "negative" if rev_growth else "neutral"
+
+                                st.markdown(render_metric_card(
+                                    "Rev Growth QoQ<br>收入增长",
+                                    rev_growth_str,
+                                    f"{latest.year}Q{latest.quarter}",
+                                    rev_delta_type,
+                                    "green" if (rev_growth and rev_growth > 0) else "red" if rev_growth else "orange"
+                                ), unsafe_allow_html=True)
+
+                            with kpi_col2:
+                                leverage = latest.net_leverage
+                                leverage_str = f"{leverage:.2f}x" if leverage is not None else "N/A"
+                                leverage_accent = "red" if (leverage and leverage > 5) else "yellow" if (leverage and leverage > 3) else "green"
+
+                                st.markdown(render_metric_card(
+                                    "Net Leverage<br>净杠杆",
+                                    leverage_str,
+                                    "ND/EBITDA",
+                                    "neutral",
+                                    leverage_accent
+                                ), unsafe_allow_html=True)
+
+                            with kpi_col3:
+                                coverage = latest.interest_coverage
+                                coverage_str = f"{coverage:.1f}x" if coverage is not None else "N/A"
+                                coverage_accent = "green" if (coverage and coverage > 3) else "yellow" if (coverage and coverage > 1.5) else "red"
+
+                                st.markdown(render_metric_card(
+                                    "Int Coverage<br>利息覆盖",
+                                    coverage_str,
+                                    "EBITDA/Int",
+                                    "neutral",
+                                    coverage_accent
+                                ), unsafe_allow_html=True)
+
+                            # Trend Chart (8 quarters)
+                            st.markdown("**📈 Leverage Trend / 杠杆趋势 (8Q)**")
+
+                            dates, values = fundamentals.get_trend_series('net_leverage')
+
+                            if dates and values:
+                                fig_fundamental = go.Figure()
+
+                                fig_fundamental.add_trace(go.Scatter(
+                                    x=dates,
+                                    y=values,
+                                    mode='lines+markers',
+                                    fill='tozeroy',
+                                    line=dict(color='#00B0FF', width=2),
+                                    marker=dict(size=6, color='#00B0FF'),
+                                    name='Net Leverage',
+                                    hovertemplate='<b>%{x}</b><br>Leverage: %{y:.2f}x<extra></extra>'
+                                ))
+
+                                apply_dark_theme(
+                                    fig_fundamental,
+                                    xaxis_title="Quarter / 季度",
+                                    yaxis_title="Net Leverage (x)",
+                                    height=250,
+                                    margin=dict(l=40, r=20, t=20, b=40),
+                                    showlegend=False,
+                                )
+
+                                # Remove grid lines for minimalist look
+                                fig_fundamental.update_xaxes(showgrid=False)
+                                fig_fundamental.update_yaxes(showgrid=True, gridcolor="rgba(48, 54, 61, 0.2)")
+
+                                st.plotly_chart(fig_fundamental, use_container_width=True)
+                            else:
+                                st.info("Insufficient data for trend chart / 趋势数据不足")
+
+                        else:
+                            st.info("No quarterly data available / 无季度数据")
+                    else:
+                        st.info("No fundamental data available for this issuer / 该发行人无基本面数据")
+                        st.markdown("*Fundamentals are linked via equity ticker mapping*")
+                        st.markdown("*基本面数据通过股票代码映射*")
+                else:
+                    st.warning("Financial data module not loaded / 财务数据模块未加载")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
         else:
             st.info("☝️ Select a ticker above to see detailed analysis / 选择上方的代码查看详细分析")
 
