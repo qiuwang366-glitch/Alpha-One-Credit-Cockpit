@@ -15,6 +15,7 @@ Features:
 
 import io
 import sys
+import logging
 from pathlib import Path
 from typing import Optional
 import importlib
@@ -24,6 +25,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
