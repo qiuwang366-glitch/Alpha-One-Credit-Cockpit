@@ -529,6 +529,7 @@ LABELS = {
     # Tabs
     "tab_matrix": "Relative Value / 相对价值",
     "tab_optimization": "Alpha Lab / 阿尔法实验室",
+    "tab_issuer360": "Issuer 360 / 发行人全景",
     "tab_brief": "Executive Brief / 管理简报",
 
     # Sections
@@ -1051,9 +1052,10 @@ def main():
     # ============================================
     # MAIN TABS
     # ============================================
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         f"📈 {LABELS['tab_matrix']}",
         f"🔬 {LABELS['tab_optimization']}",
+        f"🏢 {LABELS['tab_issuer360']}",
         f"📋 {LABELS['tab_brief']}",
     ])
 
@@ -1862,9 +1864,630 @@ def main():
         st.plotly_chart(fig_carry, use_container_width=True)
 
     # ============================================
-    # TAB 3: EXECUTIVE BRIEF
+    # TAB 3: ISSUER 360 DASHBOARD
     # ============================================
     with tab3:
+        st.markdown(f'<div class="section-header">🏢 Issuer 360 / 发行人全景</div>', unsafe_allow_html=True)
+        st.markdown("*Comprehensive issuer analysis: Market Data (Yield Curve) + Fundamental Data (Financials vs. Peers)*")
+        st.markdown("*综合发行人分析：市场数据（收益率曲线）+ 基本面数据（财务与同业比较）*")
+
+        # ============================================
+        # ISSUER SELECTION
+        # ============================================
+        issuer_select_col1, issuer_select_col2 = st.columns([3, 1])
+
+        with issuer_select_col1:
+            # Get unique issuers from bond_equity_map
+            if st.session_state.financial_loader is not None and st.session_state.financial_loader.bond_equity_map is not None:
+                bond_equity_map = st.session_state.financial_loader.bond_equity_map
+                # Filter to only issuers with data
+                available_issuers = bond_equity_map[
+                    bond_equity_map['Bond_Ticker'].isin(df_filtered['Ticker'].str.split().str[0])
+                ].copy()
+
+                # Create issuer display names
+                available_issuers['Display_Name'] = available_issuers['Issuer_Name'] + " (" + available_issuers['Bond_Ticker'] + ")"
+                issuer_options = sorted(available_issuers['Display_Name'].unique())
+
+                selected_issuer_display = st.selectbox(
+                    "Select Issuer / 选择发行人",
+                    options=[""] + issuer_options,
+                    format_func=lambda x: "-- Select an issuer --" if x == "" else x,
+                    key="issuer_360_selector"
+                )
+            else:
+                st.warning("Financial data not loaded. Please check data files.")
+                st.warning("财务数据未加载，请检查数据文件。")
+                selected_issuer_display = ""
+
+        with issuer_select_col2:
+            st.markdown("**Quick Stats / 快速统计**")
+            if selected_issuer_display:
+                # Extract bond ticker from display name
+                selected_issuer_ticker = selected_issuer_display.split("(")[-1].rstrip(")")
+                issuer_bonds = df_filtered[df_filtered["Ticker"].str.startswith(selected_issuer_ticker)]
+                st.metric("Bonds in Portfolio / 组合中债券数", len(issuer_bonds))
+                st.metric("Total Exposure / 总敞口", format_currency(issuer_bonds['Nominal_USD'].sum()))
+
+        if selected_issuer_display and selected_issuer_display != "":
+            # Extract issuer info
+            selected_issuer_ticker = selected_issuer_display.split("(")[-1].rstrip(")")
+            selected_issuer_row = available_issuers[available_issuers['Bond_Ticker'] == selected_issuer_ticker].iloc[0]
+            selected_issuer_name = selected_issuer_row['Issuer_Name']
+            selected_equity_ticker = selected_issuer_row['Equity_Ticker']
+
+            # Get issuer sector from first bond
+            issuer_bonds_all = df_filtered[df_filtered["Ticker"].str.startswith(selected_issuer_ticker)]
+            if len(issuer_bonds_all) > 0:
+                issuer_sector = issuer_bonds_all.iloc[0]['Sector_L1']
+            else:
+                issuer_sector = None
+
+            st.markdown("---")
+
+            # ============================================
+            # SECTION A: VALUATION CURVE (Issuer vs. Sector)
+            # ============================================
+            st.markdown(f'<div class="section-header">📊 Section A: Valuation Curve / 估值曲线分析</div>', unsafe_allow_html=True)
+            st.markdown(f"**{selected_issuer_name}** bonds vs. **{issuer_sector}** sector curve")
+            st.markdown(f"**{selected_issuer_name}** 债券 vs. **{issuer_sector}** 板块曲线")
+
+            curve_col1, curve_col2 = st.columns([3, 1])
+
+            with curve_col1:
+                # Create scatter + line chart
+                fig_issuer_curve = go.Figure()
+
+                # Get all bonds from this issuer
+                issuer_bonds = df_filtered[df_filtered["Ticker"].str.startswith(selected_issuer_ticker)]
+
+                if len(issuer_bonds) > 0:
+                    # Plot issuer bonds as gold scatter points
+                    hover_text_issuer = issuer_bonds.apply(
+                        lambda row: (
+                            f"<b>{row['Ticker']}</b><br>"
+                            f"名称: {row.get('Name', 'N/A')}<br>"
+                            f"━━━━━━━━━━━━<br>"
+                            f"YTM: {row['Yield']*100:.2f}%<br>"
+                            f"Duration: {row['Duration']:.2f}y<br>"
+                            f"OAS: {row['OAS']:.0f}bp<br>"
+                            f"Z-Score: {row['Z_Score']:.2f}<br>"
+                            f"━━━━━━━━━━━━<br>"
+                            f"Notional: {format_currency(row['Nominal_USD'])}"
+                        ),
+                        axis=1,
+                    )
+
+                    sizes_issuer = np.clip(issuer_bonds["Nominal_USD"] / 1e6, 8, 30)
+
+                    fig_issuer_curve.add_trace(go.Scatter(
+                        x=issuer_bonds["Duration"],
+                        y=issuer_bonds["Yield"] * 100,
+                        mode="markers",
+                        name=f"{selected_issuer_ticker} Bonds",
+                        marker=dict(
+                            size=sizes_issuer,
+                            color="#FFD700",  # Gold
+                            opacity=0.9,
+                            line=dict(width=2, color="white"),
+                            symbol="diamond"
+                        ),
+                        hovertemplate="%{hovertext}<extra></extra>",
+                        hovertext=hover_text_issuer,
+                    ))
+
+                    # Line 1: Issuer Curve (if more than 2 bonds)
+                    if len(issuer_bonds) >= 3:
+                        try:
+                            from scipy.interpolate import interp1d
+                            x_issuer = issuer_bonds["Duration"].values
+                            y_issuer = issuer_bonds["Yield"].values
+
+                            # Sort by duration
+                            sort_idx = np.argsort(x_issuer)
+                            x_issuer = x_issuer[sort_idx]
+                            y_issuer = y_issuer[sort_idx]
+
+                            # Linear interpolation
+                            f_issuer = interp1d(x_issuer, y_issuer, kind='linear', fill_value='extrapolate')
+                            x_curve_issuer = np.linspace(x_issuer.min(), x_issuer.max(), 50)
+                            y_curve_issuer = f_issuer(x_curve_issuer)
+
+                            fig_issuer_curve.add_trace(go.Scatter(
+                                x=x_curve_issuer,
+                                y=y_curve_issuer * 100,
+                                mode="lines",
+                                name=f"{selected_issuer_ticker} Curve",
+                                line=dict(color="#FFD700", width=3, dash="solid"),
+                                hoverinfo="skip",
+                            ))
+                        except Exception as e:
+                            logger.warning(f"Could not fit issuer curve: {e}")
+
+                    # Line 2: Sector Benchmark (Nelson-Siegel curve)
+                    if issuer_sector and issuer_sector in filtered_analyzer.get_regression_results():
+                        try:
+                            x_sector, y_sector = filtered_analyzer.get_curve_points(issuer_sector, n_points=50)
+                            sector_color = get_sector_color(issuer_sector, st.session_state.sector_color_map)
+
+                            fig_issuer_curve.add_trace(go.Scatter(
+                                x=x_sector,
+                                y=y_sector * 100,
+                                mode="lines",
+                                name=f"{issuer_sector} Sector Curve",
+                                line=dict(color=sector_color, width=3, dash="dash"),
+                                hoverinfo="skip",
+                            ))
+                        except Exception as e:
+                            logger.warning(f"Could not get sector curve: {e}")
+
+                    apply_dark_theme(
+                        fig_issuer_curve,
+                        xaxis_title="Duration / 久期 (Years)",
+                        yaxis_title="YTM / 到期收益率 (%)",
+                        hovermode="closest",
+                        height=450,
+                        margin=dict(l=60, r=20, t=40, b=60),
+                        legend=dict(
+                            orientation="h",
+                            yanchor="top",
+                            y=-0.15,
+                            xanchor="center",
+                            x=0.5,
+                            bgcolor="rgba(22, 27, 34, 0.8)",
+                            bordercolor="#30363d",
+                            font=dict(size=10, color="#e6edf3"),
+                        ),
+                    )
+
+                    st.plotly_chart(fig_issuer_curve, use_container_width=True)
+                else:
+                    st.info("No bonds found for this issuer in the current portfolio.")
+                    st.info("当前组合中未找到该发行人的债券。")
+
+            with curve_col2:
+                st.markdown("**📈 Insight / 洞察**")
+                if len(issuer_bonds) > 0:
+                    avg_z_score = issuer_bonds['Z_Score'].mean()
+                    if avg_z_score < -1.0:
+                        st.markdown("🔴 **Trading WIDE (Rich) / 偏贵**")
+                        st.markdown("Yields are LOWER than sector average")
+                        st.markdown("收益率低于板块平均水平")
+                        st.markdown(f"Avg Z-Score: {avg_z_score:.2f}")
+                    elif avg_z_score > 1.0:
+                        st.markdown("🟢 **Trading TIGHT (Cheap) / 偏便宜**")
+                        st.markdown("Yields are HIGHER than sector average")
+                        st.markdown("收益率高于板块平均水平")
+                        st.markdown(f"Avg Z-Score: {avg_z_score:.2f}")
+                    else:
+                        st.markdown("🟡 **Fair Value / 公允估值**")
+                        st.markdown("Trading in line with sector")
+                        st.markdown("与板块走势一致")
+                        st.markdown(f"Avg Z-Score: {avg_z_score:.2f}")
+
+                    st.markdown("---")
+                    st.markdown("**Portfolio Holdings / 组合持仓**")
+                    st.metric("Total Bonds / 债券总数", len(issuer_bonds))
+                    st.metric("Weighted Duration / 加权久期", f"{(issuer_bonds['Duration'] * issuer_bonds['Nominal_USD']).sum() / issuer_bonds['Nominal_USD'].sum():.2f}y")
+                    st.metric("Weighted YTM / 加权收益率", f"{(issuer_bonds['Yield'] * issuer_bonds['Nominal_USD']).sum() / issuer_bonds['Nominal_USD'].sum() * 100:.2f}%")
+
+            st.markdown("---")
+
+            # ============================================
+            # SECTION B: FINANCIAL DASHBOARD (2x2 Grid)
+            # ============================================
+            st.markdown(f'<div class="section-header">💼 Section B: Financial Dashboard / 财务仪表板</div>', unsafe_allow_html=True)
+            st.markdown("*Quarterly trend analysis across key credit metrics*")
+            st.markdown("*关键信用指标的季度趋势分析*")
+
+            # Get fundamentals for this issuer
+            if st.session_state.financial_loader is not None:
+                fundamentals = st.session_state.financial_loader.get_issuer_fundamentals(selected_issuer_ticker)
+
+                if fundamentals is not None:
+                    # Get last 8 quarters
+                    quarters = fundamentals.last_8_quarters
+
+                    if len(quarters) > 0:
+                        # Create 2x2 grid
+                        fin_row1_col1, fin_row1_col2 = st.columns(2)
+                        fin_row2_col1, fin_row2_col2 = st.columns(2)
+
+                        # CHART 1: Deleveraging (Bar: Total Liabilities + Line: Net Leverage)
+                        with fin_row1_col1:
+                            st.markdown("**📉 Deleveraging / 去杠杆**")
+
+                            dates, liabilities_vals = fundamentals.get_trend_series('total_liabilities')
+                            _, leverage_vals = fundamentals.get_trend_series('net_leverage')
+
+                            fig_delever = go.Figure()
+
+                            # Bar chart for Total Liabilities
+                            fig_delever.add_trace(go.Bar(
+                                x=dates,
+                                y=[v/1e9 for v in liabilities_vals],  # Convert to billions
+                                name='Total Liabilities',
+                                marker_color='#58a6ff',
+                                yaxis='y',
+                                hovertemplate='<b>%{x}</b><br>Total Liabilities: $%{y:.2f}B<extra></extra>'
+                            ))
+
+                            # Line chart for Net Leverage (right axis)
+                            if len(leverage_vals) > 0:
+                                fig_delever.add_trace(go.Scatter(
+                                    x=dates[-len(leverage_vals):],
+                                    y=leverage_vals,
+                                    name='Net Leverage',
+                                    mode='lines+markers',
+                                    line=dict(color='#f85149', width=3),
+                                    marker=dict(size=8, color='#f85149'),
+                                    yaxis='y2',
+                                    hovertemplate='<b>%{x}</b><br>Net Leverage: %{y:.2f}x<extra></extra>'
+                                ))
+
+                            fig_delever.update_layout(
+                                yaxis=dict(title='Total Liabilities ($B)', side='left', color='#58a6ff'),
+                                yaxis2=dict(title='Net Leverage (x)', side='right', overlaying='y', color='#f85149'),
+                                hovermode='x unified',
+                                height=280,
+                                margin=dict(l=50, r=50, t=20, b=40),
+                                showlegend=True,
+                                legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5)
+                            )
+
+                            apply_dark_theme(fig_delever)
+                            st.plotly_chart(fig_delever, use_container_width=True)
+
+                        # CHART 2: Liquidity (Stacked Area: Cash vs. Net Interest Expense)
+                        with fin_row1_col2:
+                            st.markdown("**💰 Liquidity / 流动性**")
+
+                            _, cash_vals = fundamentals.get_trend_series('cash')
+                            _, int_exp_vals = fundamentals.get_trend_series('net_int_exp')
+
+                            fig_liquidity = go.Figure()
+
+                            # Stacked area for Cash
+                            fig_liquidity.add_trace(go.Scatter(
+                                x=dates[-len(cash_vals):] if len(cash_vals) > 0 else [],
+                                y=[v/1e9 for v in cash_vals] if len(cash_vals) > 0 else [],
+                                name='Cash',
+                                mode='lines',
+                                fill='tozeroy',
+                                line=dict(color='#3fb950', width=2),
+                                hovertemplate='<b>%{x}</b><br>Cash: $%{y:.2f}B<extra></extra>'
+                            ))
+
+                            # Stacked area for Net Interest Expense
+                            fig_liquidity.add_trace(go.Scatter(
+                                x=dates[-len(int_exp_vals):] if len(int_exp_vals) > 0 else [],
+                                y=[abs(v)/1e9 for v in int_exp_vals] if len(int_exp_vals) > 0 else [],
+                                name='Net Int Exp',
+                                mode='lines',
+                                fill='tonexty',
+                                line=dict(color='#f85149', width=2),
+                                hovertemplate='<b>%{x}</b><br>Net Int Exp: $%{y:.2f}B<extra></extra>'
+                            ))
+
+                            fig_liquidity.update_layout(
+                                yaxis_title='Amount ($B)',
+                                hovermode='x unified',
+                                height=280,
+                                margin=dict(l=50, r=20, t=20, b=40),
+                                showlegend=True,
+                                legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5)
+                            )
+
+                            apply_dark_theme(fig_liquidity)
+                            st.plotly_chart(fig_liquidity, use_container_width=True)
+
+                        # CHART 3: Profitability (Line: EBITDA Margin)
+                        with fin_row2_col1:
+                            st.markdown("**📊 Profitability / 盈利能力**")
+
+                            # Calculate EBITDA margin for each quarter
+                            ebitda_margins = []
+                            dates_margin = []
+                            for q in quarters:
+                                if q.revenue > 0 and q.ebitda > 0:
+                                    margin = (q.ebitda / q.revenue) * 100
+                                    ebitda_margins.append(margin)
+                                    dates_margin.append(f"{q.year}Q{q.quarter}")
+
+                            fig_profit = go.Figure()
+
+                            fig_profit.add_trace(go.Scatter(
+                                x=dates_margin,
+                                y=ebitda_margins,
+                                name='EBITDA Margin',
+                                mode='lines+markers',
+                                line=dict(color='#a371f7', width=3),
+                                marker=dict(size=8, color='#a371f7'),
+                                fill='tozeroy',
+                                hovertemplate='<b>%{x}</b><br>EBITDA Margin: %{y:.1f}%<extra></extra>'
+                            ))
+
+                            fig_profit.update_layout(
+                                yaxis_title='EBITDA Margin (%)',
+                                hovermode='x unified',
+                                height=280,
+                                margin=dict(l=50, r=20, t=20, b=40),
+                                showlegend=False
+                            )
+
+                            apply_dark_theme(fig_profit)
+                            st.plotly_chart(fig_profit, use_container_width=True)
+
+                        # CHART 4: Growth (Bar: Revenue QoQ)
+                        with fin_row2_col2:
+                            st.markdown("**📈 Growth / 增长**")
+
+                            dates_rev, revenue_vals = fundamentals.get_trend_series('revenue')
+
+                            # Calculate QoQ growth
+                            qoq_growth = []
+                            dates_qoq = []
+                            for i in range(1, len(revenue_vals)):
+                                if revenue_vals[i-1] > 0:
+                                    growth = ((revenue_vals[i] - revenue_vals[i-1]) / revenue_vals[i-1]) * 100
+                                    qoq_growth.append(growth)
+                                    dates_qoq.append(dates_rev[i])
+
+                            fig_growth = go.Figure()
+
+                            # Color bars based on positive/negative growth
+                            colors = ['#3fb950' if g >= 0 else '#f85149' for g in qoq_growth]
+
+                            fig_growth.add_trace(go.Bar(
+                                x=dates_qoq,
+                                y=qoq_growth,
+                                name='Revenue QoQ Growth',
+                                marker_color=colors,
+                                hovertemplate='<b>%{x}</b><br>QoQ Growth: %{y:.1f}%<extra></extra>'
+                            ))
+
+                            # Add zero line
+                            fig_growth.add_hline(y=0, line_dash="dash", line_color="#30363d", line_width=1)
+
+                            fig_growth.update_layout(
+                                yaxis_title='Revenue Growth (%)',
+                                hovermode='x unified',
+                                height=280,
+                                margin=dict(l=50, r=20, t=20, b=40),
+                                showlegend=False
+                            )
+
+                            apply_dark_theme(fig_growth)
+                            st.plotly_chart(fig_growth, use_container_width=True)
+
+                    else:
+                        st.info("No quarterly financial data available for this issuer.")
+                        st.info("该发行人无季度财务数据。")
+                else:
+                    st.info("No fundamental data available for this issuer.")
+                    st.info("该发行人无基本面数据。")
+            else:
+                st.warning("Financial data module not loaded.")
+                st.warning("财务数据模块未加载。")
+
+            st.markdown("---")
+
+            # ============================================
+            # SECTION C: CREDIT PEERS (The "Killer Feature")
+            # ============================================
+            st.markdown(f'<div class="section-header">🎯 Section C: Credit Peers / 信用同业对比</div>', unsafe_allow_html=True)
+            st.markdown("*Benchmarking against sector peers*")
+            st.markdown("*与板块同业基准对比*")
+
+            if issuer_sector and st.session_state.financial_loader is not None:
+                # Get all issuers in the same sector
+                sector_bonds = df_filtered[df_filtered["Sector_L1"] == issuer_sector]
+                sector_issuers = sector_bonds["Ticker"].str.split().str[0].unique()
+
+                # Get fundamentals for all peer issuers
+                peer_metrics_list = []
+                selected_issuer_metrics = None
+
+                for peer_ticker in sector_issuers:
+                    peer_fundamentals = st.session_state.financial_loader.get_issuer_fundamentals(peer_ticker)
+                    if peer_fundamentals is not None:
+                        latest = peer_fundamentals.latest_quarter
+                        if latest is not None:
+                            metrics_dict = {
+                                'ticker': peer_ticker,
+                                'issuer_name': peer_fundamentals.issuer_name,
+                                'net_leverage': latest.net_leverage,
+                                'interest_coverage': latest.interest_coverage,
+                                'ebitda_margin': (latest.ebitda / latest.revenue * 100) if latest.revenue > 0 else None,
+                                'cash_ratio': (latest.cash / latest.total_liabilities * 100) if latest.total_liabilities > 0 else None,
+                                'revenue_growth': latest.revenue_qoq_growth * 100 if latest.revenue_qoq_growth is not None else None
+                            }
+
+                            if peer_ticker == selected_issuer_ticker:
+                                selected_issuer_metrics = metrics_dict
+                            else:
+                                peer_metrics_list.append(metrics_dict)
+
+                if len(peer_metrics_list) > 0 and selected_issuer_metrics is not None:
+                    # Calculate peer averages
+                    peer_avg = {
+                        'net_leverage': np.nanmean([p['net_leverage'] for p in peer_metrics_list if p['net_leverage'] is not None]),
+                        'interest_coverage': np.nanmean([p['interest_coverage'] for p in peer_metrics_list if p['interest_coverage'] is not None]),
+                        'ebitda_margin': np.nanmean([p['ebitda_margin'] for p in peer_metrics_list if p['ebitda_margin'] is not None]),
+                        'cash_ratio': np.nanmean([p['cash_ratio'] for p in peer_metrics_list if p['cash_ratio'] is not None]),
+                        'revenue_growth': np.nanmean([p['revenue_growth'] for p in peer_metrics_list if p['revenue_growth'] is not None])
+                    }
+
+                    peer_col1, peer_col2 = st.columns([2, 1])
+
+                    with peer_col1:
+                        # Try radar chart first, fall back to bar chart if issues
+                        try:
+                            # Radar Chart (Spider Chart)
+                            categories = [
+                                'Int Coverage<br>利息覆盖',
+                                'EBITDA Margin<br>EBITDA利润率',
+                                'Cash Ratio<br>现金比率',
+                                'Revenue Growth<br>收入增长',
+                                'Net Leverage (Inv)<br>净杠杆（倒数）'
+                            ]
+
+                            # Prepare values (normalize where needed)
+                            issuer_vals = [
+                                selected_issuer_metrics['interest_coverage'] if selected_issuer_metrics['interest_coverage'] is not None else 0,
+                                selected_issuer_metrics['ebitda_margin'] if selected_issuer_metrics['ebitda_margin'] is not None else 0,
+                                selected_issuer_metrics['cash_ratio'] if selected_issuer_metrics['cash_ratio'] is not None else 0,
+                                selected_issuer_metrics['revenue_growth'] if selected_issuer_metrics['revenue_growth'] is not None else 0,
+                                (1 / selected_issuer_metrics['net_leverage'] * 10) if selected_issuer_metrics['net_leverage'] is not None and selected_issuer_metrics['net_leverage'] > 0 else 0
+                            ]
+
+                            peer_vals = [
+                                peer_avg['interest_coverage'] if not np.isnan(peer_avg['interest_coverage']) else 0,
+                                peer_avg['ebitda_margin'] if not np.isnan(peer_avg['ebitda_margin']) else 0,
+                                peer_avg['cash_ratio'] if not np.isnan(peer_avg['cash_ratio']) else 0,
+                                peer_avg['revenue_growth'] if not np.isnan(peer_avg['revenue_growth']) else 0,
+                                (1 / peer_avg['net_leverage'] * 10) if not np.isnan(peer_avg['net_leverage']) and peer_avg['net_leverage'] > 0 else 0
+                            ]
+
+                            fig_radar = go.Figure()
+
+                            # Peer average (gray line)
+                            fig_radar.add_trace(go.Scatterpolar(
+                                r=peer_vals,
+                                theta=categories,
+                                fill='toself',
+                                name='Sector Average',
+                                line=dict(color='#8b949e', width=2),
+                                fillcolor='rgba(139, 148, 158, 0.2)',
+                                hovertemplate='<b>%{theta}</b><br>Sector Avg: %{r:.2f}<extra></extra>'
+                            ))
+
+                            # Selected issuer (blue area)
+                            fig_radar.add_trace(go.Scatterpolar(
+                                r=issuer_vals,
+                                theta=categories,
+                                fill='toself',
+                                name=selected_issuer_ticker,
+                                line=dict(color='#58a6ff', width=3),
+                                fillcolor='rgba(88, 166, 255, 0.3)',
+                                hovertemplate='<b>%{theta}</b><br>' + selected_issuer_ticker + ': %{r:.2f}<extra></extra>'
+                            ))
+
+                            fig_radar.update_layout(
+                                polar=dict(
+                                    radialaxis=dict(
+                                        visible=True,
+                                        range=[0, max(max(issuer_vals), max(peer_vals)) * 1.2],
+                                        gridcolor='#30363d',
+                                        tickfont=dict(color='#8b949e')
+                                    ),
+                                    angularaxis=dict(
+                                        gridcolor='#30363d',
+                                        tickfont=dict(color='#e6edf3', size=10)
+                                    ),
+                                    bgcolor='rgba(22, 27, 34, 0.5)'
+                                ),
+                                showlegend=True,
+                                legend=dict(
+                                    orientation="h",
+                                    yanchor="top",
+                                    y=-0.1,
+                                    xanchor="center",
+                                    x=0.5,
+                                    bgcolor="rgba(22, 27, 34, 0.8)",
+                                    bordercolor="#30363d",
+                                    font=dict(color="#e6edf3")
+                                ),
+                                height=400,
+                                margin=dict(l=80, r=80, t=40, b=80),
+                                paper_bgcolor="rgba(13, 17, 23, 0)",
+                                plot_bgcolor="rgba(22, 27, 34, 0.5)",
+                                font=dict(color="#e6edf3")
+                            )
+
+                            st.plotly_chart(fig_radar, use_container_width=True)
+
+                        except Exception as e:
+                            # Fallback to side-by-side bar chart
+                            logger.warning(f"Could not create radar chart, using bar chart: {e}")
+
+                            st.markdown("**Issuer vs. Peer Average Comparison**")
+                            st.markdown("**发行人 vs. 同业平均对比**")
+
+                            comparison_data = {
+                                'Metric / 指标': [
+                                    'Net Leverage / 净杠杆',
+                                    'Interest Coverage / 利息覆盖',
+                                    'EBITDA Margin / EBITDA利润率',
+                                    'Cash Ratio / 现金比率',
+                                    'Revenue Growth / 收入增长'
+                                ],
+                                'Issuer / 发行人': [
+                                    f"{selected_issuer_metrics['net_leverage']:.2f}x" if selected_issuer_metrics['net_leverage'] is not None else "N/A",
+                                    f"{selected_issuer_metrics['interest_coverage']:.2f}x" if selected_issuer_metrics['interest_coverage'] is not None else "N/A",
+                                    f"{selected_issuer_metrics['ebitda_margin']:.1f}%" if selected_issuer_metrics['ebitda_margin'] is not None else "N/A",
+                                    f"{selected_issuer_metrics['cash_ratio']:.1f}%" if selected_issuer_metrics['cash_ratio'] is not None else "N/A",
+                                    f"{selected_issuer_metrics['revenue_growth']:.1f}%" if selected_issuer_metrics['revenue_growth'] is not None else "N/A"
+                                ],
+                                'Sector Avg / 板块平均': [
+                                    f"{peer_avg['net_leverage']:.2f}x" if not np.isnan(peer_avg['net_leverage']) else "N/A",
+                                    f"{peer_avg['interest_coverage']:.2f}x" if not np.isnan(peer_avg['interest_coverage']) else "N/A",
+                                    f"{peer_avg['ebitda_margin']:.1f}%" if not np.isnan(peer_avg['ebitda_margin']) else "N/A",
+                                    f"{peer_avg['cash_ratio']:.1f}%" if not np.isnan(peer_avg['cash_ratio']) else "N/A",
+                                    f"{peer_avg['revenue_growth']:.1f}%" if not np.isnan(peer_avg['revenue_growth']) else "N/A"
+                                ]
+                            }
+
+                            st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, hide_index=True)
+
+                    with peer_col2:
+                        st.markdown("**📊 Peer Statistics / 同业统计**")
+                        st.metric("Sector / 板块", issuer_sector)
+                        st.metric("Peer Count / 同业数量", len(peer_metrics_list))
+                        st.markdown("---")
+                        st.markdown("**Key Takeaways / 关键结论**")
+
+                        # Generate insights
+                        insights = []
+                        if selected_issuer_metrics['net_leverage'] is not None and not np.isnan(peer_avg['net_leverage']):
+                            if selected_issuer_metrics['net_leverage'] < peer_avg['net_leverage']:
+                                insights.append("✅ Lower leverage than peers / 杠杆低于同业")
+                            else:
+                                insights.append("⚠️ Higher leverage than peers / 杠杆高于同业")
+
+                        if selected_issuer_metrics['interest_coverage'] is not None and not np.isnan(peer_avg['interest_coverage']):
+                            if selected_issuer_metrics['interest_coverage'] > peer_avg['interest_coverage']:
+                                insights.append("✅ Better interest coverage / 利息覆盖更好")
+                            else:
+                                insights.append("⚠️ Weaker interest coverage / 利息覆盖较弱")
+
+                        if selected_issuer_metrics['ebitda_margin'] is not None and not np.isnan(peer_avg['ebitda_margin']):
+                            if selected_issuer_metrics['ebitda_margin'] > peer_avg['ebitda_margin']:
+                                insights.append("✅ Higher profitability / 盈利能力更强")
+                            else:
+                                insights.append("⚠️ Lower profitability / 盈利能力较弱")
+
+                        for insight in insights:
+                            st.markdown(f"- {insight}")
+
+                        if len(insights) == 0:
+                            st.info("Insufficient data for comparison")
+                            st.info("对比数据不足")
+
+                else:
+                    st.info(f"No peer data available for sector {issuer_sector}")
+                    st.info(f"板块 {issuer_sector} 无同业数据")
+            else:
+                st.warning("Cannot perform peer analysis without sector information or financial data.")
+                st.warning("缺少板块信息或财务数据，无法进行同业分析。")
+
+        else:
+            st.info("☝️ Select an issuer above to see comprehensive analysis / 选择上方的发行人查看综合分析")
+
+    # ============================================
+    # TAB 4: EXECUTIVE BRIEF
+    # ============================================
+    with tab4:
         brief_col1, brief_col2 = st.columns([2, 1])
 
         with brief_col1:
