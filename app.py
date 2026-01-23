@@ -1052,674 +1052,21 @@ def main():
     # ============================================
     # MAIN TABS
     # ============================================
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab_issuer360, tab_matrix, tab_optimization, tab_brief = st.tabs([
+        f"🏢 {LABELS['tab_issuer360']}",
         f"📈 {LABELS['tab_matrix']}",
         f"🔬 {LABELS['tab_optimization']}",
-        f"🏢 {LABELS['tab_issuer360']}",
         f"📋 {LABELS['tab_brief']}",
     ])
 
     # ============================================
-    # TAB 1: RELATIVE VALUE MATRIX
+    # TAB 1: ISSUER 360 DEEP DIVE
     # ============================================
-    with tab1:
-        st.markdown(f'<div class="section-header">{LABELS["duration_yield_matrix"]}</div>', unsafe_allow_html=True)
-
-        # Build scatter plot with dark theme
-        fig = go.Figure()
-
-        # Get selected ticker from session state
-        highlighted_ticker = st.session_state.get("selected_ticker", None)
-
-        for sector in (selected_sectors or []):
-            sector_data = df_filtered[df_filtered["Sector_L1"] == sector]
-            if len(sector_data) == 0:
-                continue
-
-            color = get_sector_color(sector, st.session_state.sector_color_map)
-            sector_cn = SECTOR_NAMES_CN.get(sector, sector)
-
-            # Split data into selected and non-selected
-            if highlighted_ticker:
-                non_selected = sector_data[sector_data["Ticker"] != highlighted_ticker]
-            else:
-                non_selected = sector_data
-
-            # Create bilingual hover text for non-selected
-            hover_text = non_selected.apply(
-                lambda row: (
-                    f"<b>{row['Ticker']}</b><br>"
-                    f"名称: {row.get('Name', 'N/A')}<br>"
-                    f"━━━━━━━━━━━━<br>"
-                    f"YTM / 收益率: {row['Yield']*100:.2f}%<br>"
-                    f"Duration / 久期: {row['Duration']:.2f}y<br>"
-                    f"OAS / 利差: {row['OAS']:.0f}bp<br>"
-                    f"Net Carry / 净息差: {row['Net_Carry']*100:.2f}%<br>"
-                    f"Z-Score / Z分数: {row['Z_Score']:.2f}<br>"
-                    f"━━━━━━━━━━━━<br>"
-                    f"Notional / 本金: {format_currency(row['Nominal_USD'])}"
-                ),
-                axis=1,
-            )
-
-            # Size based on nominal (normalized)
-            sizes = np.clip(non_selected["Nominal_USD"] / 1e6, 5, 25)
-
-            # Add non-selected bonds
-            fig.add_trace(go.Scatter(
-                x=non_selected["Duration"],
-                y=non_selected["Yield"] * 100,
-                mode="markers",
-                name=f"{sector} / {sector_cn}",
-                marker=dict(
-                    size=sizes,
-                    color=color,
-                    opacity=0.8,
-                    line=dict(width=1, color="rgba(255,255,255,0.3)"),
-                ),
-                hovertemplate="%{hovertext}<extra></extra>",
-                hovertext=hover_text,
-            ))
-
-            # Add fitted curve
-            regression_results = filtered_analyzer.get_regression_results()
-            if sector in regression_results:
-                try:
-                    x_curve, y_curve = filtered_analyzer.get_curve_points(sector, n_points=50)
-                    fig.add_trace(go.Scatter(
-                        x=x_curve,
-                        y=y_curve * 100,
-                        mode="lines",
-                        name=f"{sector} Curve",
-                        line=dict(color=color, width=2, dash="dash"),
-                        showlegend=False,
-                        hoverinfo="skip",
-                    ))
-                except Exception:
-                    pass
-
-        # Highlight selected ticker with gold star
-        if highlighted_ticker and highlighted_ticker in df_filtered["Ticker"].values:
-            selected_bond = df_filtered[df_filtered["Ticker"] == highlighted_ticker].iloc[0]
-
-            hover_text_selected = (
-                f"<b>⭐ {selected_bond['Ticker']} (SELECTED)</b><br>"
-                f"名称: {selected_bond.get('Name', 'N/A')}<br>"
-                f"━━━━━━━━━━━━<br>"
-                f"YTM / 收益率: {selected_bond['Yield']*100:.2f}%<br>"
-                f"Duration / 久期: {selected_bond['Duration']:.2f}y<br>"
-                f"OAS / 利差: {selected_bond['OAS']:.0f}bp<br>"
-                f"Net Carry / 净息差: {selected_bond['Net_Carry']*100:.2f}%<br>"
-                f"Z-Score / Z分数: {selected_bond['Z_Score']:.2f}<br>"
-                f"━━━━━━━━━━━━<br>"
-                f"Notional / 本金: {format_currency(selected_bond['Nominal_USD'])}"
-            )
-
-            fig.add_trace(go.Scatter(
-                x=[selected_bond["Duration"]],
-                y=[selected_bond["Yield"] * 100],
-                mode="markers",
-                name="Selected / 选中",
-                marker=dict(
-                    size=30,
-                    color="#FFD700",  # Gold
-                    symbol="star",
-                    line=dict(width=3, color="white"),
-                ),
-                hovertemplate=hover_text_selected + "<extra></extra>",
-                showlegend=True,
-            ))
-
-        # Apply dark theme layout
-        apply_dark_theme(
-            fig,
-            xaxis_title="Duration / 久期 (Years)",
-            yaxis_title="YTM / 到期收益率 (%)",
-            hovermode="closest",
-            height=500,
-            margin=dict(l=60, r=20, t=40, b=60),
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.15,
-                xanchor="center",
-                x=0.5,
-                bgcolor="rgba(22, 27, 34, 0.8)",
-                bordercolor="#30363d",
-                font=dict(size=10, color="#e6edf3"),
-            ),
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Model Parameters and Statistics
-        with st.expander("📊 Model Stats & Parameters / 模型统计与参数"):
-            regression_results = filtered_analyzer.get_regression_results()
-            if regression_results:
-                stats_data = []
-                for sector, r in regression_results.items():
-                    sector_display = f"{sector} / {SECTOR_NAMES_CN.get(sector, sector)}"
-                    base_stats = {
-                        f"{LABELS['sector']}": sector_display,
-                        "R²": f"{r.r_squared:.4f}",
-                        "N": r.sample_count,
-                        "Dur Range": f"{r.duration_range[0]:.1f}-{r.duration_range[1]:.1f}",
-                        "Residual σ": f"{r.residual_std*100:.2f}%",
-                    }
-
-                    # Add model-specific parameters
-                    if st.session_state.model_type == "nelson_siegel":
-                        base_stats.update({
-                            "β₀ (Long)": f"{r.beta_0*100:.2f}%",
-                            "β₁ (Short)": f"{r.beta_1*100:.2f}%",
-                            "β₂ (Curve)": f"{r.beta_2*100:.2f}%",
-                            "λ (Decay)": f"{r.lambda_:.2f}",
-                        })
-                    else:
-                        base_stats.update({
-                            "Coeff a": f"{r.a:.6f}",
-                            "Coeff b": f"{r.b:.4f}",
-                            "Coeff c": f"{r.c:.4f}",
-                        })
-
-                    stats_data.append(base_stats)
-
-                st.dataframe(pd.DataFrame(stats_data), use_container_width=True, hide_index=True)
-
-                # Add explanation for Nelson-Siegel parameters
-                if st.session_state.model_type == "nelson_siegel":
-                    st.markdown("""
-                    **Nelson-Siegel Parameters:**
-                    - **β₀ (Long-Term)**: Long-term yield level as duration → ∞
-                    - **β₁ (Short-Term)**: Short-term component (slope at origin)
-                    - **β₂ (Curvature)**: Medium-term curvature component
-                    - **λ (Decay)**: Controls where the curvature peaks
-                    """)
-
-        # ============================================
-        # SINGLE SECURITY ANALYSIS
-        # ============================================
-        st.markdown(f'<div class="section-header">🔍 Single Security Analysis / 单券分析</div>', unsafe_allow_html=True)
-        st.markdown("*Drill down into individual securities and compare to sector curve*")
-        st.markdown("*深入分析单个证券并与板块曲线对比*")
-
-        # Ticker selection
-        ticker_col1, ticker_col2 = st.columns([2, 1])
-
-        with ticker_col1:
-            available_tickers = sorted(df_filtered["Ticker"].unique())
-            selected_ticker = st.selectbox(
-                "Select Ticker / 选择代码",
-                options=[""] + available_tickers,
-                format_func=lambda x: "-- Select a ticker --" if x == "" else x,
-                key="ticker_selector"
-            )
-
-        if selected_ticker and selected_ticker != "":
-            st.session_state.selected_ticker = selected_ticker
-
-            # Get bond details
-            bond_data = df_filtered[df_filtered["Ticker"] == selected_ticker].iloc[0]
-
-            # Display bond information
-            bond_col1, bond_col2, bond_col3 = st.columns(3)
-
-            with bond_col1:
-                st.markdown(render_metric_card(
-                    "Current YTM / 当前收益率",
-                    format_percentage(bond_data["Yield"]),
-                    None,
-                    "neutral",
-                    "blue"
-                ), unsafe_allow_html=True)
-
-            with bond_col2:
-                st.markdown(render_metric_card(
-                    "OAS / 期权调整利差",
-                    f"{bond_data['OAS']:.0f} bp",
-                    None,
-                    "neutral",
-                    "purple"
-                ), unsafe_allow_html=True)
-
-            with bond_col3:
-                z_class = get_z_score_class(bond_data["Z_Score"])
-                z_accent = "red" if z_class == "rich" else "green" if z_class == "cheap" else "yellow"
-                st.markdown(render_metric_card(
-                    "Z-Score / Z分数",
-                    f"{bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
-                    get_z_score_label(bond_data["Z_Score"]),
-                    "neutral",
-                    z_accent
-                ), unsafe_allow_html=True)
-
-            # Scenario Analysis Table
-            st.markdown("**📊 Scenario Analysis / 情景分析**")
-
-            scenario_col1, scenario_col2 = st.columns([2, 1])
-
-            with scenario_col1:
-                # Calculate fair value from model
-                fair_yield = bond_data.get("Model_Yield", bond_data["Yield"])
-                residual = bond_data.get("Residual", 0)
-
-                scenario_data = {
-                    "Metric / 指标": [
-                        "Actual Yield / 实际收益率",
-                        "Fair Yield (Model) / 公允收益率（模型）",
-                        "Residual / 残差",
-                        "Z-Score / Z分数",
-                        "Interpretation / 解释"
-                    ],
-                    "Value / 数值": [
-                        format_percentage(bond_data["Yield"]),
-                        format_percentage(fair_yield),
-                        f"{residual*100:.2f}%" if not pd.isna(residual) else "N/A",
-                        f"{bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
-                        get_z_score_label(bond_data["Z_Score"])
-                    ]
-                }
-
-                st.dataframe(pd.DataFrame(scenario_data), use_container_width=True, hide_index=True)
-
-            with scenario_col2:
-                st.markdown("**📝 Notes / 注释**")
-                if not pd.isna(bond_data['Z_Score']):
-                    if bond_data['Z_Score'] < -1.5:
-                        st.markdown("⚠️ **Trading Rich / 偏贵**")
-                        st.markdown("Consider selling / 考虑卖出")
-                    elif bond_data['Z_Score'] > 1.5:
-                        st.markdown("✅ **Trading Cheap / 偏便宜**")
-                        st.markdown("Consider buying / 考虑买入")
-                    else:
-                        st.markdown("ℹ️ **Fair Value / 公允价值**")
-                        st.markdown("Hold / 持有")
-
-            # ============================================
-            # TOTAL RETURN ANALYSIS
-            # ============================================
-            st.markdown("**📈 Total Return Analysis / 总回报分析**")
-            st.markdown("*Rolldown, Carry, and Breakeven Spread Analysis / 滚动收益、息差及盈亏平衡分析*")
-
-            # Calculate total return analysis
-            total_return = filtered_analyzer.calculate_total_return_analysis(selected_ticker)
-
-            if total_return is not None:
-                # Create waterfall chart showing return components
-                return_col1, return_col2 = st.columns([2, 1])
-
-                with return_col1:
-                    # Waterfall chart data
-                    categories = [
-                        "Current Yield<br>当前收益率",
-                        "Rolldown Effect<br>滚动效应",
-                        "Funding Cost<br>资金成本",
-                        "Net Return<br>净回报"
-                    ]
-
-                    # Values for waterfall
-                    yield_val = total_return.current_yield * 100
-                    rolldown_val = total_return.rolldown_price_return * 100
-                    funding_val = -total_return.funding_cost * 100  # Negative for cost
-                    net_return_val = (total_return.current_yield + total_return.rolldown_price_return - total_return.funding_cost) * 100
-
-                    # Measure types for waterfall
-                    measure = ["relative", "relative", "relative", "total"]
-
-                    # Colors
-                    colors = ["#3fb950", "#58a6ff", "#f85149", "#a371f7"]
-
-                    fig_waterfall = go.Figure(go.Waterfall(
-                        name="Return Components",
-                        orientation="v",
-                        measure=measure,
-                        x=categories,
-                        y=[yield_val, rolldown_val, funding_val, net_return_val],
-                        textposition="outside",
-                        text=[f"{yield_val:.2f}%", f"{rolldown_val:+.2f}%", f"{funding_val:.2f}%", f"{net_return_val:.2f}%"],
-                        textfont=dict(color="#e6edf3", size=11),
-                        connector={"line": {"color": "#30363d", "width": 1}},
-                        decreasing={"marker": {"color": "#f85149"}},
-                        increasing={"marker": {"color": "#3fb950"}},
-                        totals={"marker": {"color": "#a371f7"}},
-                    ))
-
-                    apply_dark_theme(
-                        fig_waterfall,
-                        title="Return Decomposition / 回报分解",
-                        yaxis_title="Return / 回报 (%)",
-                        height=350,
-                        margin=dict(l=60, r=20, t=60, b=80),
-                        showlegend=False,
-                    )
-
-                    st.plotly_chart(fig_waterfall, use_container_width=True)
-
-                with return_col2:
-                    # Safety Buffer / Breakeven Spread Metric
-                    breakeven_bps = total_return.breakeven_spread_bps
-
-                    # Determine color based on safety level
-                    if breakeven_bps >= 50:
-                        buffer_accent = "green"
-                        buffer_status = "✅ Safe / 安全"
-                    elif breakeven_bps >= 20:
-                        buffer_accent = "yellow"
-                        buffer_status = "⚠️ Moderate / 中等"
-                    else:
-                        buffer_accent = "red"
-                        buffer_status = "🔴 At Risk / 风险"
-
-                    st.markdown(render_metric_card(
-                        "Breakeven Spread / 盈亏平衡",
-                        f"{breakeven_bps:.0f} bps",
-                        buffer_status,
-                        "positive" if breakeven_bps >= 50 else "neutral" if breakeven_bps >= 20 else "negative",
-                        buffer_accent
-                    ), unsafe_allow_html=True)
-
-                    st.markdown(render_metric_card(
-                        "Net Carry / 净息差",
-                        f"{total_return.net_carry * 100:.2f}%",
-                        f"vs FTP: {total_return.funding_cost * 100:.2f}%",
-                        "positive" if total_return.net_carry > 0 else "negative",
-                        "green" if total_return.net_carry > 0 else "red"
-                    ), unsafe_allow_html=True)
-
-                    st.markdown(render_metric_card(
-                        "Rolldown (1Y) / 滚动效应",
-                        f"{total_return.rolldown_price_return * 100:+.2f}%",
-                        f"D: {total_return.current_duration:.1f}y → {total_return.rolled_duration:.1f}y",
-                        "positive" if total_return.rolldown_price_return > 0 else "negative",
-                        "blue"
-                    ), unsafe_allow_html=True)
-
-                # Detailed breakdown table
-                with st.expander("📊 Detailed Return Breakdown / 详细回报分解"):
-                    breakdown_data = {
-                        "Component / 组成部分": [
-                            "Current Yield / 当前收益率",
-                            "Model Yield (at Duration) / 模型收益率",
-                            "Rolled Yield (D-1) / 滚动后收益率",
-                            "Yield Change (Rolldown) / 收益率变化",
-                            "Rolldown Price Return / 滚动价格回报",
-                            "Funding Cost (FTP) / 资金成本",
-                            "Net Carry / 净息差",
-                            "Total Expected Return / 预期总回报",
-                            "Breakeven Spread / 盈亏平衡利差"
-                        ],
-                        "Value / 数值": [
-                            f"{total_return.current_yield * 100:.3f}%",
-                            f"{total_return.current_model_yield * 100:.3f}%",
-                            f"{total_return.rolled_model_yield * 100:.3f}%",
-                            f"{total_return.rolldown_yield_change * 100:+.3f}%",
-                            f"{total_return.rolldown_price_return * 100:+.3f}%",
-                            f"{total_return.funding_cost * 100:.3f}%",
-                            f"{total_return.net_carry * 100:+.3f}%",
-                            f"{total_return.total_expected_return * 100:.3f}%",
-                            f"{total_return.breakeven_spread_bps:.1f} bps"
-                        ],
-                        "Explanation / 说明": [
-                            "Actual bond yield / 实际债券收益率",
-                            "Fitted curve yield at current duration / 当前久期的拟合曲线收益率",
-                            "Fitted curve yield at duration - 1 year / 久期减1年后的拟合曲线收益率",
-                            "Change in yield from rolling down curve / 沿曲线滚动的收益率变化",
-                            "≈ -Duration × Yield Change / 约等于 -久期 × 收益率变化",
-                            "Transfer pricing rate / 资金转移定价利率",
-                            "Yield - Funding Cost / 收益率 - 资金成本",
-                            "Yield + Rolldown Effect / 收益率 + 滚动效应",
-                            "Net Carry ÷ Duration (safety buffer) / 净息差 ÷ 久期 (安全缓冲)"
-                        ]
-                    }
-                    st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
-
-                    st.markdown("""
-                    **Interpretation / 解释:**
-                    - **Breakeven Spread** tells you how much credit spreads can widen before your 1-year carry is wiped out
-                    - **盈亏平衡利差**表示信用利差可以扩大多少，才会抵消1年的息差收益
-                    - Higher breakeven = more safety margin / 更高的盈亏平衡 = 更大的安全边际
-                    """)
-            else:
-                st.warning("Unable to calculate total return analysis. Curve may not be fitted for this sector.")
-                st.warning("无法计算总回报分析。该板块可能没有拟合曲线。")
-
-            # Issuer Curve Analysis
-            st.markdown("**🏢 Issuer Curve / 发行人曲线**")
-
-            # Extract issuer from ticker or name (simple heuristic)
-            issuer = selected_ticker.split()[0] if " " in selected_ticker else selected_ticker[:3]
-
-            # Find sibling bonds (same issuer)
-            sibling_mask = df_filtered["Ticker"].str.contains(issuer, case=False, na=False)
-            sibling_bonds = df_filtered[sibling_mask]
-
-            if len(sibling_bonds) > 1:
-                st.markdown(f"*Found {len(sibling_bonds)} bonds from issuer: {issuer} / 发现 {len(sibling_bonds)} 个来自发行人 {issuer} 的债券*")
-
-                # Create issuer-specific curve chart
-                fig_issuer = go.Figure()
-
-                # Plot all sibling bonds
-                for idx, row in sibling_bonds.iterrows():
-                    is_selected = row["Ticker"] == selected_ticker
-                    marker_size = 20 if is_selected else 12
-                    marker_color = "#FFD700" if is_selected else get_sector_color(row["Sector_L1"], st.session_state.sector_color_map)
-                    marker_symbol = "star" if is_selected else "circle"
-
-                    hover_text = (
-                        f"<b>{row['Ticker']}</b><br>"
-                        f"YTM: {row['Yield']*100:.2f}%<br>"
-                        f"Duration: {row['Duration']:.2f}y<br>"
-                        f"OAS: {row['OAS']:.0f}bp<br>"
-                        f"Z-Score: {row['Z_Score']:.2f}"
-                    )
-
-                    fig_issuer.add_trace(go.Scatter(
-                        x=[row["Duration"]],
-                        y=[row["Yield"] * 100],
-                        mode="markers",
-                        name=row["Ticker"],
-                        marker=dict(
-                            size=marker_size,
-                            color=marker_color,
-                            symbol=marker_symbol,
-                            line=dict(width=2, color="white" if is_selected else "rgba(255,255,255,0.3)"),
-                        ),
-                        hovertemplate=hover_text + "<extra></extra>",
-                        showlegend=False,
-                    ))
-
-                # Add sector curve if available
-                sector = bond_data["Sector_L1"]
-                regression_results = filtered_analyzer.get_regression_results()
-                if sector in regression_results:
-                    try:
-                        x_curve, y_curve = filtered_analyzer.get_curve_points(sector, n_points=50)
-                        fig_issuer.add_trace(go.Scatter(
-                            x=x_curve,
-                            y=y_curve * 100,
-                            mode="lines",
-                            name=f"{sector} Curve",
-                            line=dict(color=get_sector_color(sector, st.session_state.sector_color_map), width=2, dash="dash"),
-                            hoverinfo="skip",
-                        ))
-                    except Exception:
-                        pass
-
-                apply_dark_theme(
-                    fig_issuer,
-                    xaxis_title="Duration / 久期 (Years)",
-                    yaxis_title="YTM / 到期收益率 (%)",
-                    hovermode="closest",
-                    height=350,
-                    margin=dict(l=60, r=20, t=40, b=60),
-                    title=f"Issuer Curve: {issuer}",
-                )
-
-                st.plotly_chart(fig_issuer, use_container_width=True)
-            else:
-                st.info(f"Only one bond found for issuer {issuer}. / 该发行人仅有一个债券。")
-
-            # ============================================
-            # CREDIT INSPECTOR (FUNDAMENTALS)
-            # ============================================
-            st.markdown('<div class="inspector-header">🔍 Credit Inspector / 信用分析</div>', unsafe_allow_html=True)
-            st.markdown('<div class="inspector-subheader">Combining Pricing Signals & Financial Fundamentals / 结合定价信号与财务基本面</div>', unsafe_allow_html=True)
-
-            inspector_col1, inspector_col2 = st.columns([1, 1])
-
-            # LEFT COLUMN: Pricing Summary
-            with inspector_col1:
-                st.markdown('<div class="fundamental-panel">', unsafe_allow_html=True)
-                st.markdown('<div class="fundamental-title">📊 Pricing Analysis / 定价分析</div>', unsafe_allow_html=True)
-
-                # Display pricing metrics (already calculated above)
-                pricing_summary_col1, pricing_summary_col2 = st.columns(2)
-
-                with pricing_summary_col1:
-                    st.markdown(render_metric_card(
-                        "Fair Value / 公允价值",
-                        format_percentage(bond_data.get("Model_Yield", bond_data["Yield"])),
-                        "NS Model / NS模型",
-                        "neutral",
-                        "blue"
-                    ), unsafe_allow_html=True)
-
-                with pricing_summary_col2:
-                    z_class = get_z_score_class(bond_data["Z_Score"])
-                    z_accent = "red" if z_class == "rich" else "green" if z_class == "cheap" else "yellow"
-                    st.markdown(render_metric_card(
-                        "Valuation / 估值",
-                        get_z_score_label(bond_data["Z_Score"]),
-                        f"Z-Score: {bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
-                        "neutral",
-                        z_accent
-                    ), unsafe_allow_html=True)
-
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            # RIGHT COLUMN: Financial Fundamentals
-            with inspector_col2:
-                st.markdown('<div class="fundamental-panel">', unsafe_allow_html=True)
-                st.markdown('<div class="fundamental-title">💼 Financial Fundamentals / 财务基本面</div>', unsafe_allow_html=True)
-
-                # Get fundamental data
-                if st.session_state.financial_loader is not None:
-                    fundamentals = st.session_state.financial_loader.get_issuer_fundamentals(selected_ticker)
-
-                    if fundamentals is not None:
-                        latest = fundamentals.latest_quarter
-
-                        # Display issuer information
-                        st.markdown(
-                            f'<div class="issuer-info">'
-                            f'<span class="ticker">{fundamentals.equity_ticker}</span> | {fundamentals.issuer_name}'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-
-                        if latest is not None:
-                            # KPI Cards for latest quarter
-                            kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
-
-                            with kpi_col1:
-                                rev_growth = latest.revenue_qoq_growth
-                                rev_growth_str = f"{rev_growth*100:+.1f}%" if rev_growth is not None else "N/A"
-                                rev_delta_type = "positive" if (rev_growth and rev_growth > 0) else "negative" if rev_growth else "neutral"
-
-                                st.markdown(render_metric_card(
-                                    "Rev Growth QoQ<br>收入增长",
-                                    rev_growth_str,
-                                    f"{latest.year}Q{latest.quarter}",
-                                    rev_delta_type,
-                                    "green" if (rev_growth and rev_growth > 0) else "red" if rev_growth else "orange"
-                                ), unsafe_allow_html=True)
-
-                            with kpi_col2:
-                                leverage = latest.net_leverage
-                                leverage_str = f"{leverage:.2f}x" if leverage is not None else "N/A"
-                                leverage_accent = "red" if (leverage and leverage > 5) else "yellow" if (leverage and leverage > 3) else "green"
-
-                                st.markdown(render_metric_card(
-                                    "Net Leverage<br>净杠杆",
-                                    leverage_str,
-                                    "ND/EBITDA",
-                                    "neutral",
-                                    leverage_accent
-                                ), unsafe_allow_html=True)
-
-                            with kpi_col3:
-                                coverage = latest.interest_coverage
-                                coverage_str = f"{coverage:.1f}x" if coverage is not None else "N/A"
-                                coverage_accent = "green" if (coverage and coverage > 3) else "yellow" if (coverage and coverage > 1.5) else "red"
-
-                                st.markdown(render_metric_card(
-                                    "Int Coverage<br>利息覆盖",
-                                    coverage_str,
-                                    "EBITDA/Int",
-                                    "neutral",
-                                    coverage_accent
-                                ), unsafe_allow_html=True)
-
-                            # Trend Chart (8 quarters)
-                            st.markdown("**📈 Leverage Trend / 杠杆趋势 (8Q)**")
-
-                            dates, values = fundamentals.get_trend_series('net_leverage')
-
-                            if dates and values:
-                                fig_fundamental = go.Figure()
-
-                                fig_fundamental.add_trace(go.Scatter(
-                                    x=dates,
-                                    y=values,
-                                    mode='lines+markers',
-                                    fill='tozeroy',
-                                    line=dict(color='#00B0FF', width=2),
-                                    marker=dict(size=6, color='#00B0FF'),
-                                    name='Net Leverage',
-                                    hovertemplate='<b>%{x}</b><br>Leverage: %{y:.2f}x<extra></extra>'
-                                ))
-
-                                apply_dark_theme(
-                                    fig_fundamental,
-                                    xaxis_title="Quarter / 季度",
-                                    yaxis_title="Net Leverage (x)",
-                                    height=250,
-                                    margin=dict(l=40, r=20, t=20, b=40),
-                                    showlegend=False,
-                                )
-
-                                # Remove grid lines for minimalist look
-                                fig_fundamental.update_xaxes(showgrid=False)
-                                fig_fundamental.update_yaxes(showgrid=True, gridcolor="rgba(48, 54, 61, 0.2)")
-
-                                st.plotly_chart(fig_fundamental, use_container_width=True)
-                            else:
-                                st.info("Insufficient data for trend chart / 趋势数据不足")
-
-                        else:
-                            st.info("No quarterly data available / 无季度数据")
-                    else:
-                        st.info("No fundamental data available for this issuer / 该发行人无基本面数据")
-                        st.markdown("*Fundamentals are linked via equity ticker mapping*")
-                        st.markdown("*基本面数据通过股票代码映射*")
-                else:
-                    st.warning("Financial data module not loaded / 财务数据模块未加载")
-
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        else:
-            st.info("☝️ Select a ticker above to see detailed analysis / 选择上方的代码查看详细分析")
-
-        # ============================================
-        # ISSUER 360 DEEP DIVE (Moved from Tab 3)
-        # ============================================
-        st.markdown("---")
-        st.markdown(f'<div class="section-header">🏢 Issuer 360 Deep Dive / 发行人全景深度分析</div>', unsafe_allow_html=True)
+    with tab_issuer360:
+        st.markdown(f'<div class="section-header">🏢 Issuer 360 / 发行人全景深度分析</div>', unsafe_allow_html=True)
         st.markdown("*Quantamental Fusion: Market Pricing + Financial Fundamentals*")
         st.markdown("*量化与基本面融合：市场定价 + 财务基本面*")
 
-        # ============================================
         # ISSUER SELECTION (Changed to Equity Ticker - Name format)
         # ============================================
         issuer_select_col1, issuer_select_col2 = st.columns([3, 1])
@@ -1737,14 +1084,20 @@ def main():
                 available_issuers = unique_issuers[unique_issuers['Bond_Ticker'].isin(portfolio_bond_tickers)].copy()
 
                 # Create display names: "AAPL - Apple Inc"
-                available_issuers['Display_Name'] = available_issuers['Equity_Ticker'] + " - " + available_issuers['Issuer_Name']
-                issuer_options = sorted(available_issuers['Display_Name'].unique())
+                if len(available_issuers) > 0:
+                    available_issuers['Display_Name'] = available_issuers['Equity_Ticker'] + " - " + available_issuers['Issuer_Name']
+                    issuer_options = sorted(available_issuers['Display_Name'].unique())
+                else:
+                    issuer_options = []
+                    st.info("No issuers with financial data found in current portfolio.")
+                    st.info("当前组合中未找到有财务数据的发行人。")
 
                 selected_issuer_display = st.selectbox(
                     "Select Issuer (Equity Ticker - Name) / 选择发行人（股票代码 - 名称）",
                     options=[""] + issuer_options,
                     format_func=lambda x: "-- Select an issuer --" if x == "" else x,
-                    key="issuer_360_selector"
+                    key="issuer_360_selector",
+                    disabled=(len(issuer_options) == 0)
                 )
             else:
                 st.warning("Financial data not loaded. Please check data files.")
@@ -2502,7 +1855,665 @@ def main():
     # ============================================
     # TAB 2: ALPHA OPTIMIZATION LAB
     # ============================================
-    with tab2:
+
+    # ============================================
+    # TAB 2: RELATIVE VALUE MATRIX
+    # ============================================
+    with tab_matrix:
+        st.markdown(f'<div class="section-header">{LABELS["duration_yield_matrix"]}</div>', unsafe_allow_html=True)
+
+        # Build scatter plot with dark theme
+        fig = go.Figure()
+
+        # Get selected ticker from session state
+        highlighted_ticker = st.session_state.get("selected_ticker", None)
+
+        for sector in (selected_sectors or []):
+            sector_data = df_filtered[df_filtered["Sector_L1"] == sector]
+            if len(sector_data) == 0:
+                continue
+
+            color = get_sector_color(sector, st.session_state.sector_color_map)
+            sector_cn = SECTOR_NAMES_CN.get(sector, sector)
+
+            # Split data into selected and non-selected
+            if highlighted_ticker:
+                non_selected = sector_data[sector_data["Ticker"] != highlighted_ticker]
+            else:
+                non_selected = sector_data
+
+            # Create bilingual hover text for non-selected
+            hover_text = non_selected.apply(
+                lambda row: (
+                    f"<b>{row['Ticker']}</b><br>"
+                    f"名称: {row.get('Name', 'N/A')}<br>"
+                    f"━━━━━━━━━━━━<br>"
+                    f"YTM / 收益率: {row['Yield']*100:.2f}%<br>"
+                    f"Duration / 久期: {row['Duration']:.2f}y<br>"
+                    f"OAS / 利差: {row['OAS']:.0f}bp<br>"
+                    f"Net Carry / 净息差: {row['Net_Carry']*100:.2f}%<br>"
+                    f"Z-Score / Z分数: {row['Z_Score']:.2f}<br>"
+                    f"━━━━━━━━━━━━<br>"
+                    f"Notional / 本金: {format_currency(row['Nominal_USD'])}"
+                ),
+                axis=1,
+            )
+
+            # Size based on nominal (normalized)
+            sizes = np.clip(non_selected["Nominal_USD"] / 1e6, 5, 25)
+
+            # Add non-selected bonds
+            fig.add_trace(go.Scatter(
+                x=non_selected["Duration"],
+                y=non_selected["Yield"] * 100,
+                mode="markers",
+                name=f"{sector} / {sector_cn}",
+                marker=dict(
+                    size=sizes,
+                    color=color,
+                    opacity=0.8,
+                    line=dict(width=1, color="rgba(255,255,255,0.3)"),
+                ),
+                hovertemplate="%{hovertext}<extra></extra>",
+                hovertext=hover_text,
+            ))
+
+            # Add fitted curve
+            regression_results = filtered_analyzer.get_regression_results()
+            if sector in regression_results:
+                try:
+                    x_curve, y_curve = filtered_analyzer.get_curve_points(sector, n_points=50)
+                    fig.add_trace(go.Scatter(
+                        x=x_curve,
+                        y=y_curve * 100,
+                        mode="lines",
+                        name=f"{sector} Curve",
+                        line=dict(color=color, width=2, dash="dash"),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    ))
+                except Exception:
+                    pass
+
+        # Highlight selected ticker with gold star
+        if highlighted_ticker and highlighted_ticker in df_filtered["Ticker"].values:
+            selected_bond = df_filtered[df_filtered["Ticker"] == highlighted_ticker].iloc[0]
+
+            hover_text_selected = (
+                f"<b>⭐ {selected_bond['Ticker']} (SELECTED)</b><br>"
+                f"名称: {selected_bond.get('Name', 'N/A')}<br>"
+                f"━━━━━━━━━━━━<br>"
+                f"YTM / 收益率: {selected_bond['Yield']*100:.2f}%<br>"
+                f"Duration / 久期: {selected_bond['Duration']:.2f}y<br>"
+                f"OAS / 利差: {selected_bond['OAS']:.0f}bp<br>"
+                f"Net Carry / 净息差: {selected_bond['Net_Carry']*100:.2f}%<br>"
+                f"Z-Score / Z分数: {selected_bond['Z_Score']:.2f}<br>"
+                f"━━━━━━━━━━━━<br>"
+                f"Notional / 本金: {format_currency(selected_bond['Nominal_USD'])}"
+            )
+
+            fig.add_trace(go.Scatter(
+                x=[selected_bond["Duration"]],
+                y=[selected_bond["Yield"] * 100],
+                mode="markers",
+                name="Selected / 选中",
+                marker=dict(
+                    size=30,
+                    color="#FFD700",  # Gold
+                    symbol="star",
+                    line=dict(width=3, color="white"),
+                ),
+                hovertemplate=hover_text_selected + "<extra></extra>",
+                showlegend=True,
+            ))
+
+        # Apply dark theme layout
+        apply_dark_theme(
+            fig,
+            xaxis_title="Duration / 久期 (Years)",
+            yaxis_title="YTM / 到期收益率 (%)",
+            hovermode="closest",
+            height=500,
+            margin=dict(l=60, r=20, t=40, b=60),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.15,
+                xanchor="center",
+                x=0.5,
+                bgcolor="rgba(22, 27, 34, 0.8)",
+                bordercolor="#30363d",
+                font=dict(size=10, color="#e6edf3"),
+            ),
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Model Parameters and Statistics
+        with st.expander("📊 Model Stats & Parameters / 模型统计与参数"):
+            regression_results = filtered_analyzer.get_regression_results()
+            if regression_results:
+                stats_data = []
+                for sector, r in regression_results.items():
+                    sector_display = f"{sector} / {SECTOR_NAMES_CN.get(sector, sector)}"
+                    base_stats = {
+                        f"{LABELS['sector']}": sector_display,
+                        "R²": f"{r.r_squared:.4f}",
+                        "N": r.sample_count,
+                        "Dur Range": f"{r.duration_range[0]:.1f}-{r.duration_range[1]:.1f}",
+                        "Residual σ": f"{r.residual_std*100:.2f}%",
+                    }
+
+                    # Add model-specific parameters
+                    if st.session_state.model_type == "nelson_siegel":
+                        base_stats.update({
+                            "β₀ (Long)": f"{r.beta_0*100:.2f}%",
+                            "β₁ (Short)": f"{r.beta_1*100:.2f}%",
+                            "β₂ (Curve)": f"{r.beta_2*100:.2f}%",
+                            "λ (Decay)": f"{r.lambda_:.2f}",
+                        })
+                    else:
+                        base_stats.update({
+                            "Coeff a": f"{r.a:.6f}",
+                            "Coeff b": f"{r.b:.4f}",
+                            "Coeff c": f"{r.c:.4f}",
+                        })
+
+                    stats_data.append(base_stats)
+
+                st.dataframe(pd.DataFrame(stats_data), use_container_width=True, hide_index=True)
+
+                # Add explanation for Nelson-Siegel parameters
+                if st.session_state.model_type == "nelson_siegel":
+                    st.markdown("""
+                    **Nelson-Siegel Parameters:**
+                    - **β₀ (Long-Term)**: Long-term yield level as duration → ∞
+                    - **β₁ (Short-Term)**: Short-term component (slope at origin)
+                    - **β₂ (Curvature)**: Medium-term curvature component
+                    - **λ (Decay)**: Controls where the curvature peaks
+                    """)
+
+        # ============================================
+        # SINGLE SECURITY ANALYSIS
+        # ============================================
+        st.markdown(f'<div class="section-header">🔍 Single Security Analysis / 单券分析</div>', unsafe_allow_html=True)
+        st.markdown("*Drill down into individual securities and compare to sector curve*")
+        st.markdown("*深入分析单个证券并与板块曲线对比*")
+
+        # Ticker selection
+        ticker_col1, ticker_col2 = st.columns([2, 1])
+
+        with ticker_col1:
+            available_tickers = sorted(df_filtered["Ticker"].unique())
+            selected_ticker = st.selectbox(
+                "Select Ticker / 选择代码",
+                options=[""] + available_tickers,
+                format_func=lambda x: "-- Select a ticker --" if x == "" else x,
+                key="ticker_selector"
+            )
+
+        if selected_ticker and selected_ticker != "":
+            st.session_state.selected_ticker = selected_ticker
+
+            # Get bond details
+            bond_data = df_filtered[df_filtered["Ticker"] == selected_ticker].iloc[0]
+
+            # Display bond information
+            bond_col1, bond_col2, bond_col3 = st.columns(3)
+
+            with bond_col1:
+                st.markdown(render_metric_card(
+                    "Current YTM / 当前收益率",
+                    format_percentage(bond_data["Yield"]),
+                    None,
+                    "neutral",
+                    "blue"
+                ), unsafe_allow_html=True)
+
+            with bond_col2:
+                st.markdown(render_metric_card(
+                    "OAS / 期权调整利差",
+                    f"{bond_data['OAS']:.0f} bp",
+                    None,
+                    "neutral",
+                    "purple"
+                ), unsafe_allow_html=True)
+
+            with bond_col3:
+                z_class = get_z_score_class(bond_data["Z_Score"])
+                z_accent = "red" if z_class == "rich" else "green" if z_class == "cheap" else "yellow"
+                st.markdown(render_metric_card(
+                    "Z-Score / Z分数",
+                    f"{bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
+                    get_z_score_label(bond_data["Z_Score"]),
+                    "neutral",
+                    z_accent
+                ), unsafe_allow_html=True)
+
+            # Scenario Analysis Table
+            st.markdown("**📊 Scenario Analysis / 情景分析**")
+
+            scenario_col1, scenario_col2 = st.columns([2, 1])
+
+            with scenario_col1:
+                # Calculate fair value from model
+                fair_yield = bond_data.get("Model_Yield", bond_data["Yield"])
+                residual = bond_data.get("Residual", 0)
+
+                scenario_data = {
+                    "Metric / 指标": [
+                        "Actual Yield / 实际收益率",
+                        "Fair Yield (Model) / 公允收益率（模型）",
+                        "Residual / 残差",
+                        "Z-Score / Z分数",
+                        "Interpretation / 解释"
+                    ],
+                    "Value / 数值": [
+                        format_percentage(bond_data["Yield"]),
+                        format_percentage(fair_yield),
+                        f"{residual*100:.2f}%" if not pd.isna(residual) else "N/A",
+                        f"{bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
+                        get_z_score_label(bond_data["Z_Score"])
+                    ]
+                }
+
+                st.dataframe(pd.DataFrame(scenario_data), use_container_width=True, hide_index=True)
+
+            with scenario_col2:
+                st.markdown("**📝 Notes / 注释**")
+                if not pd.isna(bond_data['Z_Score']):
+                    if bond_data['Z_Score'] < -1.5:
+                        st.markdown("⚠️ **Trading Rich / 偏贵**")
+                        st.markdown("Consider selling / 考虑卖出")
+                    elif bond_data['Z_Score'] > 1.5:
+                        st.markdown("✅ **Trading Cheap / 偏便宜**")
+                        st.markdown("Consider buying / 考虑买入")
+                    else:
+                        st.markdown("ℹ️ **Fair Value / 公允价值**")
+                        st.markdown("Hold / 持有")
+
+            # ============================================
+            # TOTAL RETURN ANALYSIS
+            # ============================================
+            st.markdown("**📈 Total Return Analysis / 总回报分析**")
+            st.markdown("*Rolldown, Carry, and Breakeven Spread Analysis / 滚动收益、息差及盈亏平衡分析*")
+
+            # Calculate total return analysis
+            total_return = filtered_analyzer.calculate_total_return_analysis(selected_ticker)
+
+            if total_return is not None:
+                # Create waterfall chart showing return components
+                return_col1, return_col2 = st.columns([2, 1])
+
+                with return_col1:
+                    # Waterfall chart data
+                    categories = [
+                        "Current Yield<br>当前收益率",
+                        "Rolldown Effect<br>滚动效应",
+                        "Funding Cost<br>资金成本",
+                        "Net Return<br>净回报"
+                    ]
+
+                    # Values for waterfall
+                    yield_val = total_return.current_yield * 100
+                    rolldown_val = total_return.rolldown_price_return * 100
+                    funding_val = -total_return.funding_cost * 100  # Negative for cost
+                    net_return_val = (total_return.current_yield + total_return.rolldown_price_return - total_return.funding_cost) * 100
+
+                    # Measure types for waterfall
+                    measure = ["relative", "relative", "relative", "total"]
+
+                    # Colors
+                    colors = ["#3fb950", "#58a6ff", "#f85149", "#a371f7"]
+
+                    fig_waterfall = go.Figure(go.Waterfall(
+                        name="Return Components",
+                        orientation="v",
+                        measure=measure,
+                        x=categories,
+                        y=[yield_val, rolldown_val, funding_val, net_return_val],
+                        textposition="outside",
+                        text=[f"{yield_val:.2f}%", f"{rolldown_val:+.2f}%", f"{funding_val:.2f}%", f"{net_return_val:.2f}%"],
+                        textfont=dict(color="#e6edf3", size=11),
+                        connector={"line": {"color": "#30363d", "width": 1}},
+                        decreasing={"marker": {"color": "#f85149"}},
+                        increasing={"marker": {"color": "#3fb950"}},
+                        totals={"marker": {"color": "#a371f7"}},
+                    ))
+
+                    apply_dark_theme(
+                        fig_waterfall,
+                        title="Return Decomposition / 回报分解",
+                        yaxis_title="Return / 回报 (%)",
+                        height=350,
+                        margin=dict(l=60, r=20, t=60, b=80),
+                        showlegend=False,
+                    )
+
+                    st.plotly_chart(fig_waterfall, use_container_width=True)
+
+                with return_col2:
+                    # Safety Buffer / Breakeven Spread Metric
+                    breakeven_bps = total_return.breakeven_spread_bps
+
+                    # Determine color based on safety level
+                    if breakeven_bps >= 50:
+                        buffer_accent = "green"
+                        buffer_status = "✅ Safe / 安全"
+                    elif breakeven_bps >= 20:
+                        buffer_accent = "yellow"
+                        buffer_status = "⚠️ Moderate / 中等"
+                    else:
+                        buffer_accent = "red"
+                        buffer_status = "🔴 At Risk / 风险"
+
+                    st.markdown(render_metric_card(
+                        "Breakeven Spread / 盈亏平衡",
+                        f"{breakeven_bps:.0f} bps",
+                        buffer_status,
+                        "positive" if breakeven_bps >= 50 else "neutral" if breakeven_bps >= 20 else "negative",
+                        buffer_accent
+                    ), unsafe_allow_html=True)
+
+                    st.markdown(render_metric_card(
+                        "Net Carry / 净息差",
+                        f"{total_return.net_carry * 100:.2f}%",
+                        f"vs FTP: {total_return.funding_cost * 100:.2f}%",
+                        "positive" if total_return.net_carry > 0 else "negative",
+                        "green" if total_return.net_carry > 0 else "red"
+                    ), unsafe_allow_html=True)
+
+                    st.markdown(render_metric_card(
+                        "Rolldown (1Y) / 滚动效应",
+                        f"{total_return.rolldown_price_return * 100:+.2f}%",
+                        f"D: {total_return.current_duration:.1f}y → {total_return.rolled_duration:.1f}y",
+                        "positive" if total_return.rolldown_price_return > 0 else "negative",
+                        "blue"
+                    ), unsafe_allow_html=True)
+
+                # Detailed breakdown table
+                with st.expander("📊 Detailed Return Breakdown / 详细回报分解"):
+                    breakdown_data = {
+                        "Component / 组成部分": [
+                            "Current Yield / 当前收益率",
+                            "Model Yield (at Duration) / 模型收益率",
+                            "Rolled Yield (D-1) / 滚动后收益率",
+                            "Yield Change (Rolldown) / 收益率变化",
+                            "Rolldown Price Return / 滚动价格回报",
+                            "Funding Cost (FTP) / 资金成本",
+                            "Net Carry / 净息差",
+                            "Total Expected Return / 预期总回报",
+                            "Breakeven Spread / 盈亏平衡利差"
+                        ],
+                        "Value / 数值": [
+                            f"{total_return.current_yield * 100:.3f}%",
+                            f"{total_return.current_model_yield * 100:.3f}%",
+                            f"{total_return.rolled_model_yield * 100:.3f}%",
+                            f"{total_return.rolldown_yield_change * 100:+.3f}%",
+                            f"{total_return.rolldown_price_return * 100:+.3f}%",
+                            f"{total_return.funding_cost * 100:.3f}%",
+                            f"{total_return.net_carry * 100:+.3f}%",
+                            f"{total_return.total_expected_return * 100:.3f}%",
+                            f"{total_return.breakeven_spread_bps:.1f} bps"
+                        ],
+                        "Explanation / 说明": [
+                            "Actual bond yield / 实际债券收益率",
+                            "Fitted curve yield at current duration / 当前久期的拟合曲线收益率",
+                            "Fitted curve yield at duration - 1 year / 久期减1年后的拟合曲线收益率",
+                            "Change in yield from rolling down curve / 沿曲线滚动的收益率变化",
+                            "≈ -Duration × Yield Change / 约等于 -久期 × 收益率变化",
+                            "Transfer pricing rate / 资金转移定价利率",
+                            "Yield - Funding Cost / 收益率 - 资金成本",
+                            "Yield + Rolldown Effect / 收益率 + 滚动效应",
+                            "Net Carry ÷ Duration (safety buffer) / 净息差 ÷ 久期 (安全缓冲)"
+                        ]
+                    }
+                    st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
+
+                    st.markdown("""
+                    **Interpretation / 解释:**
+                    - **Breakeven Spread** tells you how much credit spreads can widen before your 1-year carry is wiped out
+                    - **盈亏平衡利差**表示信用利差可以扩大多少，才会抵消1年的息差收益
+                    - Higher breakeven = more safety margin / 更高的盈亏平衡 = 更大的安全边际
+                    """)
+            else:
+                st.warning("Unable to calculate total return analysis. Curve may not be fitted for this sector.")
+                st.warning("无法计算总回报分析。该板块可能没有拟合曲线。")
+
+            # Issuer Curve Analysis
+            st.markdown("**🏢 Issuer Curve / 发行人曲线**")
+
+            # Extract issuer from ticker or name (simple heuristic)
+            issuer = selected_ticker.split()[0] if " " in selected_ticker else selected_ticker[:3]
+
+            # Find sibling bonds (same issuer)
+            sibling_mask = df_filtered["Ticker"].str.contains(issuer, case=False, na=False)
+            sibling_bonds = df_filtered[sibling_mask]
+
+            if len(sibling_bonds) > 1:
+                st.markdown(f"*Found {len(sibling_bonds)} bonds from issuer: {issuer} / 发现 {len(sibling_bonds)} 个来自发行人 {issuer} 的债券*")
+
+                # Create issuer-specific curve chart
+                fig_issuer = go.Figure()
+
+                # Plot all sibling bonds
+                for idx, row in sibling_bonds.iterrows():
+                    is_selected = row["Ticker"] == selected_ticker
+                    marker_size = 20 if is_selected else 12
+                    marker_color = "#FFD700" if is_selected else get_sector_color(row["Sector_L1"], st.session_state.sector_color_map)
+                    marker_symbol = "star" if is_selected else "circle"
+
+                    hover_text = (
+                        f"<b>{row['Ticker']}</b><br>"
+                        f"YTM: {row['Yield']*100:.2f}%<br>"
+                        f"Duration: {row['Duration']:.2f}y<br>"
+                        f"OAS: {row['OAS']:.0f}bp<br>"
+                        f"Z-Score: {row['Z_Score']:.2f}"
+                    )
+
+                    fig_issuer.add_trace(go.Scatter(
+                        x=[row["Duration"]],
+                        y=[row["Yield"] * 100],
+                        mode="markers",
+                        name=row["Ticker"],
+                        marker=dict(
+                            size=marker_size,
+                            color=marker_color,
+                            symbol=marker_symbol,
+                            line=dict(width=2, color="white" if is_selected else "rgba(255,255,255,0.3)"),
+                        ),
+                        hovertemplate=hover_text + "<extra></extra>",
+                        showlegend=False,
+                    ))
+
+                # Add sector curve if available
+                sector = bond_data["Sector_L1"]
+                regression_results = filtered_analyzer.get_regression_results()
+                if sector in regression_results:
+                    try:
+                        x_curve, y_curve = filtered_analyzer.get_curve_points(sector, n_points=50)
+                        fig_issuer.add_trace(go.Scatter(
+                            x=x_curve,
+                            y=y_curve * 100,
+                            mode="lines",
+                            name=f"{sector} Curve",
+                            line=dict(color=get_sector_color(sector, st.session_state.sector_color_map), width=2, dash="dash"),
+                            hoverinfo="skip",
+                        ))
+                    except Exception:
+                        pass
+
+                apply_dark_theme(
+                    fig_issuer,
+                    xaxis_title="Duration / 久期 (Years)",
+                    yaxis_title="YTM / 到期收益率 (%)",
+                    hovermode="closest",
+                    height=350,
+                    margin=dict(l=60, r=20, t=40, b=60),
+                    title=f"Issuer Curve: {issuer}",
+                )
+
+                st.plotly_chart(fig_issuer, use_container_width=True)
+            else:
+                st.info(f"Only one bond found for issuer {issuer}. / 该发行人仅有一个债券。")
+
+            # ============================================
+            # CREDIT INSPECTOR (FUNDAMENTALS)
+            # ============================================
+            st.markdown('<div class="inspector-header">🔍 Credit Inspector / 信用分析</div>', unsafe_allow_html=True)
+            st.markdown('<div class="inspector-subheader">Combining Pricing Signals & Financial Fundamentals / 结合定价信号与财务基本面</div>', unsafe_allow_html=True)
+
+            inspector_col1, inspector_col2 = st.columns([1, 1])
+
+            # LEFT COLUMN: Pricing Summary
+            with inspector_col1:
+                st.markdown('<div class="fundamental-panel">', unsafe_allow_html=True)
+                st.markdown('<div class="fundamental-title">📊 Pricing Analysis / 定价分析</div>', unsafe_allow_html=True)
+
+                # Display pricing metrics (already calculated above)
+                pricing_summary_col1, pricing_summary_col2 = st.columns(2)
+
+                with pricing_summary_col1:
+                    st.markdown(render_metric_card(
+                        "Fair Value / 公允价值",
+                        format_percentage(bond_data.get("Model_Yield", bond_data["Yield"])),
+                        "NS Model / NS模型",
+                        "neutral",
+                        "blue"
+                    ), unsafe_allow_html=True)
+
+                with pricing_summary_col2:
+                    z_class = get_z_score_class(bond_data["Z_Score"])
+                    z_accent = "red" if z_class == "rich" else "green" if z_class == "cheap" else "yellow"
+                    st.markdown(render_metric_card(
+                        "Valuation / 估值",
+                        get_z_score_label(bond_data["Z_Score"]),
+                        f"Z-Score: {bond_data['Z_Score']:.2f}" if not pd.isna(bond_data['Z_Score']) else "N/A",
+                        "neutral",
+                        z_accent
+                    ), unsafe_allow_html=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            # RIGHT COLUMN: Financial Fundamentals
+            with inspector_col2:
+                st.markdown('<div class="fundamental-panel">', unsafe_allow_html=True)
+                st.markdown('<div class="fundamental-title">💼 Financial Fundamentals / 财务基本面</div>', unsafe_allow_html=True)
+
+                # Get fundamental data
+                if st.session_state.financial_loader is not None:
+                    fundamentals = st.session_state.financial_loader.get_issuer_fundamentals(selected_ticker)
+
+                    if fundamentals is not None:
+                        latest = fundamentals.latest_quarter
+
+                        # Display issuer information
+                        st.markdown(
+                            f'<div class="issuer-info">'
+                            f'<span class="ticker">{fundamentals.equity_ticker}</span> | {fundamentals.issuer_name}'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                        if latest is not None:
+                            # KPI Cards for latest quarter
+                            kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
+
+                            with kpi_col1:
+                                rev_growth = latest.revenue_qoq_growth
+                                rev_growth_str = f"{rev_growth*100:+.1f}%" if rev_growth is not None else "N/A"
+                                rev_delta_type = "positive" if (rev_growth and rev_growth > 0) else "negative" if rev_growth else "neutral"
+
+                                st.markdown(render_metric_card(
+                                    "Rev Growth QoQ<br>收入增长",
+                                    rev_growth_str,
+                                    f"{latest.year}Q{latest.quarter}",
+                                    rev_delta_type,
+                                    "green" if (rev_growth and rev_growth > 0) else "red" if rev_growth else "orange"
+                                ), unsafe_allow_html=True)
+
+                            with kpi_col2:
+                                leverage = latest.net_leverage
+                                leverage_str = f"{leverage:.2f}x" if leverage is not None else "N/A"
+                                leverage_accent = "red" if (leverage and leverage > 5) else "yellow" if (leverage and leverage > 3) else "green"
+
+                                st.markdown(render_metric_card(
+                                    "Net Leverage<br>净杠杆",
+                                    leverage_str,
+                                    "ND/EBITDA",
+                                    "neutral",
+                                    leverage_accent
+                                ), unsafe_allow_html=True)
+
+                            with kpi_col3:
+                                coverage = latest.interest_coverage
+                                coverage_str = f"{coverage:.1f}x" if coverage is not None else "N/A"
+                                coverage_accent = "green" if (coverage and coverage > 3) else "yellow" if (coverage and coverage > 1.5) else "red"
+
+                                st.markdown(render_metric_card(
+                                    "Int Coverage<br>利息覆盖",
+                                    coverage_str,
+                                    "EBITDA/Int",
+                                    "neutral",
+                                    coverage_accent
+                                ), unsafe_allow_html=True)
+
+                            # Trend Chart (8 quarters)
+                            st.markdown("**📈 Leverage Trend / 杠杆趋势 (8Q)**")
+
+                            dates, values = fundamentals.get_trend_series('net_leverage')
+
+                            if dates and values:
+                                fig_fundamental = go.Figure()
+
+                                fig_fundamental.add_trace(go.Scatter(
+                                    x=dates,
+                                    y=values,
+                                    mode='lines+markers',
+                                    fill='tozeroy',
+                                    line=dict(color='#00B0FF', width=2),
+                                    marker=dict(size=6, color='#00B0FF'),
+                                    name='Net Leverage',
+                                    hovertemplate='<b>%{x}</b><br>Leverage: %{y:.2f}x<extra></extra>'
+                                ))
+
+                                apply_dark_theme(
+                                    fig_fundamental,
+                                    xaxis_title="Quarter / 季度",
+                                    yaxis_title="Net Leverage (x)",
+                                    height=250,
+                                    margin=dict(l=40, r=20, t=20, b=40),
+                                    showlegend=False,
+                                )
+
+                                # Remove grid lines for minimalist look
+                                fig_fundamental.update_xaxes(showgrid=False)
+                                fig_fundamental.update_yaxes(showgrid=True, gridcolor="rgba(48, 54, 61, 0.2)")
+
+                                st.plotly_chart(fig_fundamental, use_container_width=True)
+                            else:
+                                st.info("Insufficient data for trend chart / 趋势数据不足")
+
+                        else:
+                            st.info("No quarterly data available / 无季度数据")
+                    else:
+                        st.info("No fundamental data available for this issuer / 该发行人无基本面数据")
+                        st.markdown("*Fundamentals are linked via equity ticker mapping*")
+                        st.markdown("*基本面数据通过股票代码映射*")
+                else:
+                    st.warning("Financial data module not loaded / 财务数据模块未加载")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        else:
+            st.info("☝️ Select a ticker above to see detailed analysis / 选择上方的代码查看详细分析")
+
+        # ============================================
+
+    # ============================================
+    # TAB 3: ALPHA OPTIMIZATION LAB
+    # ============================================
+    with tab_optimization:
         opt_col1, opt_col2 = st.columns(2)
 
         # SELL CANDIDATES
@@ -2654,55 +2665,11 @@ def main():
     # ============================================
     # TAB 3: ISSUER 360 DASHBOARD
     # ============================================
-    with tab3:
-        st.markdown(f'<div class="section-header">📍 Issuer 360 Relocated / Issuer 360 已移至Tab 1</div>', unsafe_allow_html=True)
-
-        st.info("ℹ️ **The Issuer 360 Deep Dive has been moved to Tab 1 (The Matrix)**")
-        st.info("ℹ️ **Issuer 360深度分析功能已移至Tab 1（相对价值矩阵）**")
-
-        st.markdown("---")
-
-        st.markdown("### What's New / 更新内容")
-        st.markdown("""
-        **Phase 3.9 - Quantamental Alpha Integration:**
-
-        The Issuer 360 analysis is now seamlessly integrated into **Tab 1** below the main scatter plot, with significant enhancements:
-
-        1. **🎯 Quantamental Scorecard (NEW)**
-           - **Leverage-Adjusted Carry (LAC)**: How much spread per turn of leverage?
-           - **Mispricing Quadrant**: Find Deep Value (黄金坑) vs. Value Traps (价值陷阱)
-
-        2. **🔍 Enhanced Issuer Selection**
-           - Selector now uses **Equity Ticker - Name** format (e.g., "AAPL - Apple Inc")
-           - Auto-displays all associated bonds for each issuer
-
-        3. **📊 Improved Visualizations**
-           - **Dual Y-Axes** on Financial Charts for better readability
-           - Chart #3 now shows Revenue (bars) + EBITDA Margin (line) together
-
-        4. **📄 Investment Memo Generation (NEW)**
-           - Generate comprehensive one-pager with:
-             - Issuer profile & sector analysis
-             - Trading recommendations (Rich/Cheap bonds)
-             - Fundamental trends (Improving/Deteriorating)
-             - **Quantamental Verdict** (BUY/SELL/HOLD)
-           - Download as Markdown file
-
-        **Navigate to Tab 1 to access the enhanced Issuer 360 Deep Dive!**
-
-        **前往Tab 1查看增强版的Issuer 360深度分析！**
-        """)
-
-        st.markdown("---")
-
-        st.markdown("### Quick Navigation / 快速导航")
-        st.markdown("👉 **Go to Tab 1 (The Matrix)** to use the new Issuer 360 features")
-        st.markdown("👉 **前往Tab 1（相对价值矩阵）**使用新的Issuer 360功能")
 
     # ============================================
     # TAB 4: EXECUTIVE BRIEF
     # ============================================
-    with tab4:
+    with tab_brief:
         brief_col1, brief_col2 = st.columns([2, 1])
 
         with brief_col1:
