@@ -29,14 +29,15 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Force reload of modules during development to avoid cache issues
-import src.module_b.analytics
-import src.module_b.data_loader
-import src.module_b.financials
-import src.utils.constants
-importlib.reload(src.utils.constants)
-importlib.reload(src.module_b.data_loader)
-importlib.reload(src.module_b.analytics)
-importlib.reload(src.module_b.financials)
+from src.utils import constants as utils_constants
+from src.module_b import data_loader as module_data_loader
+from src.module_b import analytics as module_analytics
+from src.module_b import financials as module_financials
+
+importlib.reload(utils_constants)
+importlib.reload(module_data_loader)
+importlib.reload(module_analytics)
+importlib.reload(module_financials)
 
 from src.module_b.data_loader import DataLoader, DataValidationError
 from src.module_b.analytics import PortfolioAnalyzer
