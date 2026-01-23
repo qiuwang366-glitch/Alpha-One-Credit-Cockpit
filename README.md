@@ -383,9 +383,66 @@ For questions or support, please open an issue in the repository.
 - `bac31be` - Merge pull request #1
 - `dff66b9` - Initial repository setup
 
+### 2026-01-23 (Phase 3: Fundamental Integration & UI Polish)
+
+**Financial Fundamentals Module**
+- Created `src/module_b/financials.py` for quarterly financial data processing
+- Implemented `FinancialDataLoader` class with automatic bond-to-equity ticker mapping
+- Added `QuarterlyMetrics` and `IssuerFundamentals` dataclasses for structured data
+- Metric calculations: Net Debt Proxy, Net Leverage, Interest Coverage, Revenue QoQ Growth
+- Graceful handling of missing EBITDA/Interest Expense (fill with 0 or exclude)
+- 8-quarter historical data caching for trend analysis
+
+**Bloomberg Terminal Aesthetic**
+- Updated CSS color scheme: Deep Dark (#121212), Bloomberg Orange (#FF9800), Terminal Blue (#00B0FF)
+- Added monospace fonts (Roboto Mono) for financial metrics
+- Enhanced metric cards with orange accent borders
+- Professional glassmorphism effects with backdrop blur
+- Custom styling for fundamental panels and KPI cards
+
+**Language Toggle**
+- Added bilingual toggle button (🌐 EN/CN) in header
+- Session state management for language preference
+- Button with hover effects and active state styling
+- Seamless language switching with page rerun
+
+**Credit Inspector Panel**
+- Integrated fundamentals display directly on main page (Tab 1)
+- Two-column layout: LEFT (Pricing Analysis), RIGHT (Financial Fundamentals)
+- LEFT column shows Fair Value and Z-Score valuation metrics
+- RIGHT column displays:
+  - Issuer information (Equity Ticker & Name)
+  - Three KPI cards: Revenue Growth QoQ, Net Leverage, Interest Coverage
+  - 8-quarter trend chart for Net Leverage (area chart, minimalist design)
+- Color-coded metrics: Green (safe), Yellow (moderate), Red (at risk)
+- Automatic mapping via `bond_equity_map.csv` and `quarterly_financials.csv`
+
+**Data Architecture**
+- Loaded `bond_equity_map.csv` (131 issuers) with Bond_Ticker → Equity_Ticker mapping
+- Loaded `quarterly_financials.csv` with historical quarterly data
+- Automatic data loading on app startup with coverage statistics
+- Graceful fallback if fundamental data not available for specific bonds
+
+**Technical Improvements**
+- Added module reload for `financials.py` to prevent cache issues
+- Session state management for financial data loader
+- Efficient caching of issuer fundamentals with O(1) lookup by bond ticker
+- Robust error handling for missing or incomplete fundamental data
+- Automatic sorting of quarterly data by date ascending
+
+**User Experience**
+- Credit Inspector appears below Single Security Analysis when ticker selected
+- Trend chart uses clean design with no grid lines (Bloomberg style)
+- Hover tooltips show quarter and exact leverage values
+- Issuer equity ticker displayed with orange highlight
+- Seamless integration with existing pricing analytics
+
+**Commits:**
+- TBD - Phase 3: Integrate financial fundamentals with Credit Inspector panel
+
 ---
 
-**Total Development Time**: 2 days
-**Current Version**: 2.0 (Phase 2)
-**Lines of Code**: ~3,500
+**Total Development Time**: 3 days
+**Current Version**: 3.0 (Phase 3)
+**Lines of Code**: ~4,200
 **Test Coverage**: In Progress
