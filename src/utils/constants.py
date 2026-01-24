@@ -74,3 +74,21 @@ MIN_SAMPLES_FOR_REGRESSION = 5  # Minimum bonds per sector for curve fitting
 # Dashboard defaults
 DEFAULT_MIN_LIQUIDITY = 1
 DEFAULT_EXCLUDE_HTM = True
+
+# UI Theme Colors (Bloomberg Terminal-inspired)
+THEME_COLORS = {
+    "background": "#121212",        # Deep black background
+    "accent_orange": "#FF9800",     # Bloomberg orange
+    "accent_blue": "#00B0FF",       # Terminal blue
+    "success": "#4CAF50",           # Green for positive metrics
+    "warning": "#FFC107",           # Amber for neutral
+    "danger": "#F44336",            # Red for negative metrics
+    "text_primary": "#FFFFFF",      # White text
+    "text_secondary": "#B0B0B0",    # Gray text
+}
+
+# App Metadata
+APP_NAME = "Alpha-One Credit Cockpit"
+APP_VERSION = "3.5"
+APP_AUTHOR = "Liu Lu"
+APP_LINKEDIN = "https://www.linkedin.com/in/liulu-math/"
